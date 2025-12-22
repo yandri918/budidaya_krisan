@@ -121,24 +121,32 @@ with tab2:
         st.info(f"**Hari:** {day_name}")
     
     with report_cols[1]:
-        # Initialize house list in session state
-        if 'house_list' not in st.session_state:
+        # Get house list from database or use default
+        if 'house_database' in st.session_state and st.session_state.house_database:
+            house_options = [data['name'] for key, data in st.session_state.house_database.items()]
+        elif 'house_list' in st.session_state:
+            house_options = st.session_state.house_list
+        else:
             st.session_state.house_list = ["House 1", "House 2", "House 3"]
+            house_options = st.session_state.house_list
         
         house_name = st.selectbox(
             "🏠 Nama Greenhouse/House",
-            st.session_state.house_list,
+            house_options,
             help="Pilih greenhouse untuk grading"
         )
         
         # Option to add new house
         with st.expander("➕ Tambah House Baru"):
-            new_house = st.text_input("Nama House Baru")
-            if st.button("Tambah"):
-                if new_house and new_house not in st.session_state.house_list:
-                    st.session_state.house_list.append(new_house)
-                    st.success(f"✅ {new_house} ditambahkan!")
-                    st.rerun()
+            new_house = st.text_input("Nama House Baru", key="add_house_grading")
+            if st.button("Tambah", key="btn_add_grading"):
+                if new_house:
+                    if 'house_list' not in st.session_state:
+                        st.session_state.house_list = list(house_options)
+                    if new_house not in st.session_state.house_list:
+                        st.session_state.house_list.append(new_house)
+                        st.success(f"✅ {new_house} ditambahkan!")
+                        st.rerun()
     
     with report_cols[2]:
         st.markdown(f"""
@@ -150,28 +158,37 @@ with tab2:
         """, unsafe_allow_html=True)
     
     st.markdown("---")
-    # ========== SYNC DATA DARI KALKULATOR PRODUKSI ==========
-    # Check if synced data exists
-    has_synced_data = 'krisan_data' in st.session_state and st.session_state.krisan_data.get('beds_putih', 0) > 0
     
-    if has_synced_data:
-        data = st.session_state.krisan_data
+    # ========== SYNC DATA DARI HOUSE DATABASE ==========
+    # Get selected house data from database
+    selected_house_data = None
+    if 'house_database' in st.session_state:
+        for key, data in st.session_state.house_database.items():
+            if data.get('name') == house_name:
+                selected_house_data = data
+                break
+    
+    if selected_house_data:
         st.markdown(f"""
         <div class="sync-badge">
-            📊 <strong>Data Tersinkronisasi dari Kalkulator Produksi:</strong><br>
-            🤍 Putih: <strong>{data.get('beds_putih', 0)}</strong> bedengan ({data.get('plants_putih', 0):,} tanaman) |
-            💗 Pink: <strong>{data.get('beds_pink', 0)}</strong> bedengan ({data.get('plants_pink', 0):,} tanaman) |
-            💛 Kuning: <strong>{data.get('beds_kuning', 0)}</strong> bedengan ({data.get('plants_kuning', 0):,} tanaman)
+            📊 <strong>Data House "{house_name}" dari Kalkulator Produksi:</strong><br>
+            📦 Bedengan: <strong>{selected_house_data.get('beds', 0)}</strong> |
+            📏 Panjang: <strong>{selected_house_data.get('bed_length', 25)}m</strong> |
+            📊 Baris: <strong>{selected_house_data.get('rows_per_bed', 8)}</strong> |
+            🌱 Total Tanaman: <strong>{selected_house_data.get('total_plants', 0):,}</strong><br>
+            🤍 Putih: <strong>{selected_house_data.get('beds_putih', 0)}</strong> bed |
+            💗 Pink: <strong>{selected_house_data.get('beds_pink', 0)}</strong> bed |
+            💛 Kuning: <strong>{selected_house_data.get('beds_kuning', 0)}</strong> bed
         </div>
         """, unsafe_allow_html=True)
         
-        use_synced = st.checkbox("✅ Gunakan data dari Kalkulator Produksi", value=True)
+        use_synced = st.checkbox("✅ Gunakan data dari Kalkulator Produksi", value=True, key="use_synced_grading")
         
         if use_synced:
-            beds_putih = data.get('beds_putih', 4)
-            beds_pink = data.get('beds_pink', 4)
-            beds_kuning = data.get('beds_kuning', 4)
-            plants_per_bed = data.get('plants_per_bed', 1400)
+            beds_putih = selected_house_data.get('beds_putih', 4)
+            beds_pink = selected_house_data.get('beds_pink', 4)
+            beds_kuning = selected_house_data.get('beds_kuning', 4)
+            plants_per_bed = selected_house_data.get('plants_per_bed', 1400)
         else:
             st.markdown("### 🌸 Input Manual Proporsi Bedengan")
             col_bed1, col_bed2, col_bed3 = st.columns(3)
