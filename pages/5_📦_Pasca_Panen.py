@@ -1,29 +1,72 @@
 # 📦 Pasca Panen Krisan
-# Panduan panen, grading, dan perpanjangan vase life
+# Panduan panen, grading input, dan perpanjangan vase life
 
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
+import plotly.graph_objects as go
 
 st.set_page_config(page_title="Pasca Panen", page_icon="📦", layout="wide")
 
-st.markdown("## 📦 Teknologi Pasca Panen Krisan Spray")
-st.info("Panduan pemanenan, grading, handling, dan teknik perpanjangan vase life untuk bunga potong berkualitas.")
+# CSS
+st.markdown("""
+<style>
+    .grade-card {
+        background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%);
+        border: 1px solid #a7f3d0;
+        border-radius: 12px;
+        padding: 1rem;
+        margin: 0.5rem 0;
+    }
+    .grade-bs {
+        background: linear-gradient(135deg, #fef3c7 0%, #ffffff 100%);
+        border: 1px solid #fcd34d;
+        border-radius: 12px;
+        padding: 1rem;
+        margin: 0.5rem 0;
+    }
+    .progress-bar {
+        background: #e5e7eb;
+        border-radius: 10px;
+        height: 20px;
+        overflow: hidden;
+    }
+    .progress-fill {
+        background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+    .summary-box {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        border: 1px solid #93c5fd;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-tab1, tab2, tab3, tab4 = st.tabs(["✂️ Teknik Panen", "📊 Grading", "💧 Vase Life", "📦 Packing & Distribusi"])
+st.markdown("## 📦 Teknologi Pasca Panen Krisan Spray")
+st.info("Panduan pemanenan, grading input aktual, handling, dan perpanjangan vase life.")
+
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "✂️ Teknik Panen", 
+    "📊 Input Grading", 
+    "📋 Standar Grade",
+    "💧 Vase Life", 
+    "📦 Packing"
+])
 
 # TAB 1: Teknik Panen
 with tab1:
     st.subheader("✂️ Teknik Pemanenan Krisan Spray")
     
-    st.markdown("""
-    ### ⏰ Waktu Panen Optimal
-    """)
-    
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("""
+        ### ⏰ Waktu Panen Optimal
+        
         **Waktu Terbaik:**
         - Pagi hari: 06.00 - 09.00 WIB
         - Sore hari: 15.00 - 17.00 WIB
@@ -32,45 +75,254 @@ with tab1:
         **Kondisi Bunga:**
         - 2-3 kuntum sudah mekar penuh (untuk spray)
         - Kuntum lain masih kuncup berwarna
-        - Hindari panen saat bunga basah embun/hujan
+        - Hindari panen saat bunga basah
         """)
     
     with col2:
         st.markdown("""
+        ### 🔧 Peralatan & Teknik
+        
         **Peralatan:**
         - Pisau/gunting tajam & steril
-        - Ember berisi air bersih + preservative
-        - Keranjang pengangkut (hindari menumpuk)
-        - Sarung tangan (opsional)
+        - Ember berisi air + preservative
+        - Keranjang pengangkut
         
         **Cara Potong:**
-        - Potong miring 45° untuk area penyerapan lebih besar
-        - Sisakan minimal 2 ruas daun di tanaman
+        - Potong miring 45°
+        - Sisakan 2 ruas daun di tanaman
         - Langsung masukkan ke air!
         """)
     
-    st.warning("⚠️ **PENTING:** Jangan biarkan tangkai bunga terkena udara lebih dari 30 detik! Air embolism akan mengurangi vase life.")
+    st.warning("⚠️ **PENTING:** Jangan biarkan tangkai terkena udara >30 detik! Air embolism akan mengurangi vase life.")
+
+# TAB 2: Input Grading Aktual
+with tab2:
+    st.subheader("📊 Input Hasil Grading Aktual")
+    
+    # Get potential harvest from session or input
+    col_setup, col_summary = st.columns([2, 1])
+    
+    with col_setup:
+        potential_harvest = st.number_input(
+            "🌱 Potensi Tanaman Panen (batang)",
+            min_value=1000, max_value=100000, value=17000, step=1000,
+            help="Jumlah tanaman yang siap panen"
+        )
+    
+    with col_summary:
+        st.markdown(f"""
+        <div class="summary-box">
+            💡 <strong>Masukkan hasil grading dari panen.</strong><br>
+            Potensi tanaman panen: <strong>{potential_harvest:,}</strong> batang
+        </div>
+        """, unsafe_allow_html=True)
     
     st.markdown("---")
     
-    st.markdown("### 📏 Standar Panjang Tangkai")
+    # Initialize session state for grades
+    if 'grading_data' not in st.session_state:
+        st.session_state.grading_data = {
+            'g60': 0, 'g80': 0, 'g100': 0, 'g120': 0, 'g160': 0,
+            'r80': 0, 'r100': 0, 'r160': 0, 'r200': 0
+        }
     
-    length_data = pd.DataFrame({
-        "Grade": ["Super", "A", "B", "C"],
-        "Panjang (cm)": ["80-90", "70-80", "60-70", "50-60"],
-        "Kuntum Mekar": ["3-4", "2-3", "2-3", "1-2"],
-        "Target Pasar": ["Ekspor, hotel", "Florist premium", "Florist umum", "Pasar tradisional"]
-    })
+    # GRADE NORMAL (Panjang 90 cm)
+    st.markdown("### ✅ Grade Normal (Panjang 90 cm)")
     
-    st.dataframe(length_data, use_container_width=True, hide_index=True)
+    normal_grades = [
+        {"name": "Grade 60", "key": "g60", "qty": 60, "price": 60000},
+        {"name": "Grade 80", "key": "g80", "qty": 80, "price": 80000},
+        {"name": "Grade 100", "key": "g100", "qty": 100, "price": 100000},
+        {"name": "Grade 120", "key": "g120", "qty": 120, "price": 120000},
+        {"name": "Grade 160", "key": "g160", "qty": 160, "price": 160000},
+    ]
+    
+    cols_normal = st.columns(5)
+    
+    for i, grade in enumerate(normal_grades):
+        with cols_normal[i]:
+            st.markdown(f"""
+            <div class="grade-card">
+                <strong>{grade['name']}</strong><br>
+                <small>{grade['qty']} btg/ikat</small>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.session_state.grading_data[grade['key']] = st.number_input(
+                "Jumlah Ikat",
+                min_value=0, max_value=500, value=st.session_state.grading_data[grade['key']],
+                key=f"input_{grade['key']}",
+                label_visibility="visible"
+            )
+            
+            st.caption(f"Rp {grade['price']:,}/ikat")
+    
+    st.markdown("---")
+    
+    # GRADE BS/RUSAK (Panjang 70-80 cm)
+    st.markdown("### ⚠️ Grade Rusak/BS (Panjang 70-80 cm)")
+    st.caption("Untuk bunga dengan batang lebih pendek dari standar")
+    
+    bs_grades = [
+        {"name": "R-80", "key": "r80", "qty": 80, "length": 80, "price": 40000},
+        {"name": "R-100", "key": "r100", "qty": 100, "length": 80, "price": 50000},
+        {"name": "R-160", "key": "r160", "qty": 160, "length": 70, "price": 60000},
+        {"name": "R-200", "key": "r200", "qty": 200, "length": 70, "price": 70000},
+    ]
+    
+    cols_bs = st.columns(4)
+    
+    for i, grade in enumerate(bs_grades):
+        with cols_bs[i]:
+            st.markdown(f"""
+            <div class="grade-bs">
+                <strong>{grade['name']}</strong><br>
+                <small>({grade['qty']} btg, {grade['length']}cm)</small>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.session_state.grading_data[grade['key']] = st.number_input(
+                "Jml Ikat",
+                min_value=0, max_value=500, value=st.session_state.grading_data[grade['key']],
+                key=f"input_{grade['key']}",
+                label_visibility="visible"
+            )
+            
+            st.caption(f"Rp {grade['price']:,}/ikat")
+    
+    st.markdown("---")
+    
+    # CALCULATE TOTALS
+    total_normal_stems = sum(
+        st.session_state.grading_data[g['key']] * g['qty'] 
+        for g in normal_grades
+    )
+    
+    total_bs_stems = sum(
+        st.session_state.grading_data[g['key']] * g['qty'] 
+        for g in bs_grades
+    )
+    
+    total_graded = total_normal_stems + total_bs_stems
+    progress_pct = (total_graded / potential_harvest * 100) if potential_harvest > 0 else 0
+    remaining = potential_harvest - total_graded
+    
+    # Revenue calculation
+    revenue_normal = sum(
+        st.session_state.grading_data[g['key']] * g['price'] 
+        for g in normal_grades
+    )
+    
+    revenue_bs = sum(
+        st.session_state.grading_data[g['key']] * g['price'] 
+        for g in bs_grades
+    )
+    
+    total_revenue = revenue_normal + revenue_bs
+    
+    # PROGRESS BAR
+    st.markdown("### 📊 Progress Grading")
+    
+    progress_color = "#10b981" if progress_pct <= 100 else "#ef4444"
+    st.markdown(f"""
+    <div class="progress-bar">
+        <div class="progress-fill" style="width: {min(progress_pct, 100)}%; background: {progress_color};"></div>
+    </div>
+    <div style="text-align: center; margin-top: 0.5rem;">
+        <strong>{total_graded:,}</strong> / {potential_harvest:,} batang 
+        (<strong>{progress_pct:.1f}%</strong>)
+        {f" — Sisa: {remaining:,} batang" if remaining > 0 else ""}
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if progress_pct > 100:
+        st.error(f"⚠️ Total grading ({total_graded:,}) melebihi potensi panen ({potential_harvest:,})!")
+    
+    st.markdown("---")
+    
+    # SUMMARY TABLE
+    st.markdown("### 💰 Ringkasan Hasil Grading")
+    
+    col_sum1, col_sum2, col_sum3 = st.columns(3)
+    
+    with col_sum1:
+        st.metric("🌸 Total Batang Normal", f"{total_normal_stems:,}")
+        st.metric("💵 Pendapatan Normal", f"Rp {revenue_normal:,.0f}")
+    
+    with col_sum2:
+        st.metric("⚠️ Total Batang BS", f"{total_bs_stems:,}")
+        st.metric("💵 Pendapatan BS", f"Rp {revenue_bs:,.0f}")
+    
+    with col_sum3:
+        st.metric("📦 **TOTAL BATANG**", f"{total_graded:,}")
+        st.metric("💰 **TOTAL PENDAPATAN**", f"Rp {total_revenue:,.0f}")
+    
+    # Detailed breakdown table
+    with st.expander("📋 Lihat Rincian per Grade", expanded=False):
+        breakdown_data = []
+        
+        for g in normal_grades:
+            ikat = st.session_state.grading_data[g['key']]
+            if ikat > 0:
+                breakdown_data.append({
+                    "Grade": g['name'],
+                    "Tipe": "Normal",
+                    "Ikat": ikat,
+                    "Batang": ikat * g['qty'],
+                    "Harga/Ikat": f"Rp {g['price']:,}",
+                    "Subtotal": f"Rp {ikat * g['price']:,}"
+                })
+        
+        for g in bs_grades:
+            ikat = st.session_state.grading_data[g['key']]
+            if ikat > 0:
+                breakdown_data.append({
+                    "Grade": g['name'],
+                    "Tipe": "BS/Rusak",
+                    "Ikat": ikat,
+                    "Batang": ikat * g['qty'],
+                    "Harga/Ikat": f"Rp {g['price']:,}",
+                    "Subtotal": f"Rp {ikat * g['price']:,}"
+                })
+        
+        if breakdown_data:
+            st.dataframe(pd.DataFrame(breakdown_data), use_container_width=True, hide_index=True)
+        else:
+            st.info("Belum ada data grading yang diinput.")
+    
+    # Pie chart
+    if total_graded > 0:
+        st.markdown("### 📊 Distribusi Grade")
+        
+        labels = []
+        values = []
+        
+        for g in normal_grades:
+            stems = st.session_state.grading_data[g['key']] * g['qty']
+            if stems > 0:
+                labels.append(g['name'])
+                values.append(stems)
+        
+        for g in bs_grades:
+            stems = st.session_state.grading_data[g['key']] * g['qty']
+            if stems > 0:
+                labels.append(g['name'])
+                values.append(stems)
+        
+        fig = go.Figure(data=[go.Pie(
+            labels=labels, 
+            values=values, 
+            hole=0.4,
+            marker_colors=['#10b981', '#059669', '#047857', '#065f46', '#064e3b', 
+                          '#fbbf24', '#f59e0b', '#d97706', '#b45309']
+        )])
+        
+        fig.update_layout(title="Distribusi Batang per Grade", height=400)
+        st.plotly_chart(fig, use_container_width=True)
 
-# TAB 2: Grading
-with tab2:
-    st.subheader("📊 Sistem Grading Krisan Spray")
-    
-    st.markdown("""
-    Grading yang konsisten = harga premium dan kepuasan pelanggan!
-    """)
+# TAB 3: Standar Grading
+with tab3:
+    st.subheader("📋 Standar Grading Krisan Spray")
     
     grading_criteria = pd.DataFrame({
         "Kriteria": ["Panjang Tangkai", "Jumlah Kuntum", "Ukuran Kuntum", "Kesegaran", 
@@ -89,157 +341,83 @@ with tab2:
     
     st.markdown("---")
     
-    st.markdown("### 💰 Estimasi Harga per Grade")
+    st.markdown("### 💰 Harga per Grade")
     
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
+    cols = st.columns(4)
+    with cols[0]:
         st.metric("Super", "Rp 15.000-20.000", "/tangkai")
-    with col2:
+    with cols[1]:
         st.metric("Grade A", "Rp 10.000-15.000", "/tangkai")
-    with col3:
+    with cols[2]:
         st.metric("Grade B", "Rp 7.000-10.000", "/tangkai")
-    with col4:
+    with cols[3]:
         st.metric("Grade C", "Rp 4.000-7.000", "/tangkai")
-    
-    st.info("💡 **Tips:** Konsistensi grading yang ketat akan membangun reputasi dan pelanggan loyal!")
 
-# TAB 3: Vase Life
-with tab3:
+# TAB 4: Vase Life
+with tab4:
     st.subheader("💧 Teknik Perpanjangan Vase Life")
     
-    st.success("""
-    **Target Vase Life Krisan Spray:** 10-16 hari
-    
-    Dengan handling yang benar, krisan bisa bertahan hingga 3 minggu!
-    """)
-    
-    st.markdown("### 🧪 Larutan Preservative")
+    st.success("**Target Vase Life Krisan Spray:** 10-16 hari")
     
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("""
-        **Formula Komersial:**
-        - Chrysal, Floralife, atau merek lain
-        - Ikuti dosis pada kemasan
-        - Ganti larutan setiap 2-3 hari
+        ### 🧪 Larutan Preservative
         
-        **Kandungan Utama:**
-        - Sukrosa (gula) - sumber energi
-        - Biocide - mencegah bakteri
-        - Acidifier - menurunkan pH
+        **Formula Komersial:**
+        - Chrysal, Floralife
+        - Ikuti dosis pada kemasan
+        - Ganti setiap 2-3 hari
+        
+        **Formula DIY (per 1 Liter):**
+        - Gula: 20g
+        - Cuka: 2ml
+        - Bleach: 3-4 tetes
         """)
     
     with col2:
         st.markdown("""
-        **Formula Sederhana (DIY):**
+        ### 🌡️ Cold Chain
         
-        Per 1 Liter air:
-        - Gula pasir: 20 gram (2 sendok makan)
-        - Cuka: 2 ml (atau asam sitrat 0.5g)
-        - Pemutih (bleach): 0.2 ml (3-4 tetes)
-        
-        *pH target: 3.5-4.5*
+        | Tahap | Suhu | Durasi |
+        |-------|------|--------|
+        | Hydration | 2-4°C | 2-4 jam |
+        | Storage | 2-4°C | Maks 7 hari |
+        | Display | 8-12°C | 3-5 hari |
         """)
     
-    st.markdown("---")
-    
-    st.markdown("### 🌡️ Pendinginan (Cold Chain)")
-    
-    st.markdown("""
-    | Tahap | Suhu | Durasi | Tujuan |
-    |-------|------|--------|--------|
-    | Hydration awal | 2-4°C | 2-4 jam | Rehidrasi cepat, turunkan suhu lapang |
-    | Cold storage | 2-4°C | Maks 7 hari | Penyimpanan sebelum distribusi |
-    | Display (florist) | 8-12°C | 3-5 hari | Showcase untuk pembeli |
-    | Rumah konsumen | 18-22°C | 7-14 hari | Nikmati bunga! |
-    """)
-    
-    st.error("🚨 **JANGAN** simpan krisan bersama buah/sayur yang menghasilkan etilen (apel, pisang, tomat)!")
-    
-    st.markdown("---")
-    
-    st.markdown("### 📋 SOP Handling Pasca Panen")
-    
-    with st.expander("📋 Langkah-langkah Detail", expanded=True):
-        st.markdown("""
-        1. **Panen** → Potong miring 45°, langsung masuk air
-        2. **Transportasi ke packing house** → Dalam air, tutup dari matahari
-        3. **Re-cut** → Potong ulang 2-3 cm dalam air
-        4. **Grading** → Sortir per grade, ikat per bunch (10 tangkai)
-        5. **Hydration** → Rendam di larutan preservative + cold water 2-4 jam
-        6. **Packing** → Wrapping + box
-        7. **Cold storage** → 2-4°C hingga siap kirim
-        8. **Distribusi** → Truk berpendingin atau kirim pagi hari
-        """)
+    st.error("🚨 JANGAN simpan bersama buah yang menghasilkan etilen!")
 
-# TAB 4: Packing
-with tab4:
+# TAB 5: Packing
+with tab5:
     st.subheader("📦 Packing & Distribusi")
     
-    st.markdown("### 📦 Jenis Kemasan")
-    
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("""
-        **1. Bunch Wrapping**
-        - 10 tangkai per bunch
-        - Wrapping: Plastik OPP/BOPP transparan
-        - Label: Nama produk, grade, tanggal panen
-        - Cocok untuk: Florist, grosir
+        ### 📦 Jenis Kemasan
         
-        **2. Box Kardus**
-        - Kapasitas: 20-50 bunch per box
-        - Material: Kardus bergelombang, ventilasi
-        - Liner: Plastik PE untuk menjaga kelembaban
-        - Cocok untuk: Distribusi jarak jauh
+        **1. Bunch Wrapping** (10 tangkai/bunch)
+        - Plastik OPP transparan
+        - Cocok untuk florist
+        
+        **2. Box Kardus** (20-50 bunch)
+        - Distribusi jarak jauh
         """)
     
     with col2:
         st.markdown("""
-        **3. Bucket System**
-        - Bucket plastik + air preservative
-        - Kapasitas: 10-20 bunch per bucket
-        - Tutup untuk transportasi
-        - Cocok untuk: Jarak dekat, florist
+        ### 🚚 Distribusi
         
-        **4. Sleeve Individual**
-        - Wrapping per tangkai (premium)
-        - Untuk retail supermarket
-        - Include sachet preservative mini
+        | Jarak | Suhu | Durasi |
+        |-------|------|--------|
+        | <50 km | Ambient | 2-3 jam |
+        | 50-200 km | 8-15°C | 4-6 jam |
+        | >200 km | 2-4°C | 24-48 jam |
         """)
-    
-    st.markdown("---")
-    
-    st.markdown("### 🚚 Tips Distribusi")
-    
-    st.markdown("""
-    | Jarak | Metode | Suhu | Durasi Aman |
-    |-------|--------|------|-------------|
-    | <50 km | Pickup terbuka + tutup | Ambient | 2-3 jam (pagi) |
-    | 50-200 km | Mobil box tertutup | 8-15°C | 4-6 jam |
-    | >200 km / antar pulau | Truk reefer / pesawat | 2-4°C | 24-48 jam |
-    """)
-    
-    st.warning("⚠️ Pastikan bunga tidak terkena sinar matahari langsung selama transportasi!")
-    
-    st.markdown("---")
-    
-    st.markdown("### 🏪 Channel Penjualan")
-    
-    channels = pd.DataFrame({
-        "Channel": ["Florist Retail", "Event Organizer", "Dekorasi Hotel/Kantor", 
-                    "Pasar Bunga Tradisional", "Online/E-commerce", "Ekspor"],
-        "Karakteristik": ["Order teratur, grade campuran", "Order besar musiman (wedding)", 
-                          "Kontrak bulanan, kualitas stabil", "Volume besar, harga kompetitif",
-                          "Packaging premium, individual", "Sertifikasi, cold chain ketat"],
-        "Margin": ["Sedang", "Tinggi", "Sedang-Tinggi", "Rendah", "Tinggi", "Sangat Tinggi"]
-    })
-    
-    st.dataframe(channels, use_container_width=True, hide_index=True)
 
 # Footer
 st.markdown("---")
-st.caption("🌸 Budidaya Krisan Pro - Teknologi Pasca Panen")
+st.caption("🌸 Budidaya Krisan Pro - Teknologi Pasca Panen & Grading")
