@@ -67,25 +67,44 @@ with tab1:
 with tab2:
     st.subheader("📊 Analisis Biaya & Pendapatan Operasional")
     
+    # Sync with house_database
+    if 'house_database' in st.session_state and st.session_state.house_database:
+        house_db = st.session_state.house_database
+        num_houses = len(house_db)
+        total_beds = sum(h.get('beds', 12) for h in house_db.values())
+        total_plants_synced = sum(h.get('total_plants', 0) for h in house_db.values())
+        
+        st.success(f"📊 Data tersinkronisasi: **{num_houses} house**, **{total_beds} bedengan**, **{total_plants_synced:,} tanaman/siklus**")
+        use_synced = True
+    else:
+        use_synced = False
+        total_plants_synced = 0
+        st.info("💡 Sinkronkan data dari Kalkulator Produksi untuk hasil akurat")
+    
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("### 📝 Parameter Produksi")
         
-        density = st.slider("Densitas (tanaman/m²)", 40, 80, 64)
-        survival_rate = st.slider("Survival Rate (%)", 70, 95, 85) / 100
-        stems_per_plant = st.slider("Tangkai per Tanaman", 2.0, 5.0, 3.5, 0.5)
-        cycles_per_year = st.slider("Siklus per Tahun", 2, 4, 3)
+        if use_synced and total_plants_synced > 0:
+            total_plants = total_plants_synced
+            st.metric("🌱 Tanaman per Siklus (synced)", f"{total_plants:,}")
+        else:
+            density = st.slider("Densitas (tanaman/m²)", 40, 80, 64)
+            total_plants = greenhouse_area * density
+        
+        survival_rate = st.slider("✅ Survival Rate (%)", 70, 95, 90) / 100
+        stems_per_plant = st.slider("🌸 Tangkai per Tanaman", 1.0, 2.0, 1.0, 0.5, help="1 tanaman = 1 tangkai bunga")
+        cycles_per_year = st.slider("📅 Siklus per Tahun", 2, 4, 3)
         
         st.markdown("### 💰 Parameter Harga")
         
-        avg_selling_price = st.number_input("Harga Jual Rata-rata (Rp/tangkai)", 5000, 25000, 12000, step=500)
+        avg_selling_price = st.number_input("💵 Harga Jual Rata-rata (Rp/tangkai)", 500, 5000, 1000, step=100)
         
     with col2:
         st.markdown("### 📋 Biaya Operasional per Siklus")
         
         # Calculate production
-        total_plants = greenhouse_area * density
         harvested = int(total_plants * survival_rate)
         total_stems = int(harvested * stems_per_plant)
         
@@ -95,11 +114,15 @@ with tab2:
         
         # Costs per cycle
         cost_cutting = total_plants * 400  # Rp 400/stek
-        cost_fertilizer = greenhouse_area * 2500
-        cost_pesticide = greenhouse_area * 1500
+        if use_synced:
+            cost_fertilizer = total_beds * 50000  # Rp 50rb/bedengan
+            cost_pesticide = total_beds * 30000   # Rp 30rb/bedengan
+        else:
+            cost_fertilizer = greenhouse_area * 2500
+            cost_pesticide = greenhouse_area * 1500
         cost_electricity = 500000 * 4  # 4 bulan per siklus
         cost_labor = 80000 * 90  # 90 hari kerja
-        cost_other = greenhouse_area * 500
+        cost_other = 2000000
         
         total_cost_cycle = cost_cutting + cost_fertilizer + cost_pesticide + cost_electricity + cost_labor + cost_other
         total_cost_year = total_cost_cycle * cycles_per_year
@@ -108,11 +131,13 @@ with tab2:
         profit_year = profit_cycle * cycles_per_year
         
         # Display
-        st.metric("Produksi per Siklus", f"{total_stems:,} tangkai")
-        st.metric("Pendapatan per Siklus", f"Rp {revenue_cycle:,.0f}")
-        st.metric("Biaya per Siklus", f"Rp {total_cost_cycle:,.0f}")
-        st.metric("**PROFIT per Siklus**", f"Rp {profit_cycle:,.0f}", 
-                  delta=f"Margin {profit_cycle/revenue_cycle*100:.1f}%" if revenue_cycle > 0 else "0%")
+        st.metric("🌸 Produksi per Siklus", f"{total_stems:,} tangkai")
+        st.metric("💵 Pendapatan per Siklus", f"Rp {revenue_cycle:,.0f}")
+        st.metric("💸 Biaya per Siklus", f"Rp {total_cost_cycle:,.0f}")
+        
+        margin_pct = (profit_cycle/revenue_cycle*100) if revenue_cycle > 0 else 0
+        st.metric("📈 **PROFIT per Siklus**", f"Rp {profit_cycle:,.0f}", 
+                  delta=f"Margin {margin_pct:.1f}%")
     
     st.markdown("---")
     
