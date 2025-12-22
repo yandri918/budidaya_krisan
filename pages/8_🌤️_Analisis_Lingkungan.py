@@ -86,11 +86,13 @@ with st.sidebar:
             st.rerun()
 
     # --- 2. INPUT WIDGETS (Render Second) ---
-    # These will use the updated 'map_lat' from session state if map was clicked
-    lat = st.number_input("Latitude", value=st.session_state.map_lat, format="%.4f", key="env_lat")
-    lon = st.number_input("Longitude", value=st.session_state.map_lon, format="%.4f", key="env_lon")
+    # NOTE: We remove 'key' argument to avoid Streamlit Mutation Exception. 
+    # The widget value will init from session_state.map_lat each rerun.
+    lat = st.number_input("Latitude", value=st.session_state.map_lat, format="%.4f")
+    lon = st.number_input("Longitude", value=st.session_state.map_lon, format="%.4f")
     
     # Sync manual input changes back to main state
+    # If user types manually, 'lat' will differ from 'st.session_state.map_lat'
     if lat != st.session_state.map_lat or lon != st.session_state.map_lon:
         st.session_state.map_lat = lat
         st.session_state.map_lon = lon
