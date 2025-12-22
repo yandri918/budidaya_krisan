@@ -817,7 +817,7 @@ with tab2:
         grade_price_data = []
         
         for g in normal_grades:
-            ikat = st.session_state.grading_data[g['key']]
+            ikat = grading_data.get(g['key'], 0)
             if ikat > 0:
                 price_per_stem = g['price'] / g['qty']
                 grade_price_data.append({
@@ -830,7 +830,7 @@ with tab2:
                 })
         
         for g in bs_grades:
-            ikat = st.session_state.grading_data[g['key']]
+            ikat = grading_data.get(g['key'], 0)
             if ikat > 0:
                 price_per_stem = g['price'] / g['qty']
                 grade_price_data.append({
