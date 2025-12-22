@@ -581,7 +581,21 @@ with tab2:
     
     # ========== ANALISIS HARGA PER BATANG ==========
     st.markdown("---")
-    st.markdown("### 💵 Analisis Harga Jual vs Biaya Produksi")
+    st.markdown("### 💵 Analisis Biaya & Pendapatan Operasional")
+    
+    # Sync production parameters
+    if 'krisan_data' in st.session_state and st.session_state.krisan_data.get('total_plants', 0) > 0:
+        kd = st.session_state.krisan_data
+        st.markdown(f"""
+        <div class="sync-badge">
+            📊 <strong>Data Tersinkronisasi dari Kalkulator Produksi:</strong><br>
+            🌱 Total Tanaman: <strong>{kd.get('total_plants', 0):,}</strong> |
+            ✅ Tanaman Hidup: <strong>{kd.get('surviving_plants', 0):,}</strong> |
+            🌸 Potensi Tangkai: <strong>{kd.get('total_stems', 0):,}</strong> |
+            📐 Luas: <strong>{kd.get('total_bed_area', 0):.1f}</strong> m² |
+            📦 Bedengan: <strong>{kd.get('num_beds', 0)}</strong> unit
+        </div>
+        """, unsafe_allow_html=True)
     
     col_cost, col_expected = st.columns(2)
     
@@ -604,6 +618,11 @@ with tab2:
         
         st.metric("💰 **TOTAL BIAYA PRODUKSI**", f"Rp {production_cost_total:,.0f}")
         st.caption(f"= Operasional Rp {operational_cost:,.0f} + Penyusutan Rp {depreciation_cost:,.0f}")
+        
+        # Cost per stem based on synced or graded data
+        if grand_total_stems > 0:
+            cost_per_stem = production_cost_total / grand_total_stems
+            st.metric("📊 Biaya per Batang", f"Rp {cost_per_stem:,.0f}", help="Total Biaya / Total Batang Graded")
         
         st.markdown("---")
         
