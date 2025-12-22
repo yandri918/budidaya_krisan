@@ -475,8 +475,8 @@ with tab4:
 
 # ==================== TAB 5: KALKULATOR HOUSE ====================
 with tab5:
-    st.subheader("🧮 Kalkulator Kebutuhan House/Bedengan")
-    st.info("Hitung berapa grup bedengan/house yang dibutuhkan untuk panen kontinu tiap minggu")
+    st.subheader("🧮 Kalkulator Kebutuhan House")
+    st.info("Hitung berapa house untuk **tanam tiap minggu di house berbeda** secara berurutan")
     
     col_calc1, col_calc2 = st.columns([1, 1.5])
     
@@ -491,21 +491,15 @@ with tab5:
         st.markdown("---")
         
         planting_interval = st.number_input(
-            "📅 Interval Tanam (hari)",
+            "📅 Interval Tanam antar House (hari)",
             min_value=5, max_value=14, value=7,
-            help="Jarak waktu antar penanaman grup baru (default: 7 hari/minggu)"
-        )
-        
-        beds_per_group = st.number_input(
-            "📦 Bedengan per Grup Tanam",
-            min_value=1, max_value=20, value=3,
-            help="Jumlah bedengan yang ditanam bersamaan dalam 1 sesi"
+            help="Jarak waktu antar penanaman house berbeda"
         )
         
         beds_per_house = st.number_input(
-            "🏠 Bedengan per House",
+            "📦 Bedengan per House",
             min_value=4, max_value=50, value=12,
-            help="Kapasitas bedengan dalam 1 greenhouse"
+            help="Jumlah bedengan dalam 1 greenhouse"
         )
     
     with col_calc2:
@@ -515,64 +509,57 @@ with tab5:
         total_cycle = calc_veg + calc_gen + calc_harvest + calc_jeda
         days_until_harvest = calc_veg + calc_gen
         
-        # Required groups for continuous harvest
-        required_groups = int((days_until_harvest / planting_interval) + 1)
-        total_beds_needed = required_groups * beds_per_group
-        required_houses = (total_beds_needed / beds_per_house)
+        import math
+        required_houses = math.ceil(total_cycle / planting_interval)
         
-        st.metric("📊 Total Siklus", f"{total_cycle} hari", f"~{total_cycle/30:.1f} bulan")
+        st.metric("📊 Total Siklus per House", f"{total_cycle} hari", f"~{total_cycle/30:.1f} bulan")
         st.metric("⏳ Hari Sampai Panen Pertama", f"{days_until_harvest} hari")
         
         st.markdown("---")
         
-        st.metric("🔢 Grup Bedengan Dibutuhkan", f"{required_groups} grup",
-                 f"(@ {beds_per_group} bedengan/grup)")
-        st.metric("📦 Total Bedengan Dibutuhkan", f"{total_beds_needed} bedengan")
+        st.metric("🏠 **JUMLAH HOUSE DIBUTUHKAN**", f"{required_houses} house")
         
-        import math
-        houses_min = math.ceil(required_houses)
-        st.metric("🏠 **JUMLAH HOUSE MINIMAL**", f"{houses_min} house",
-                 f"(@ {beds_per_house} bedengan/house)")
+        total_beds = required_houses * beds_per_house
+        st.metric("📦 Total Bedengan", f"{total_beds}", f"@ {beds_per_house}/house")
         
         st.markdown("---")
         
-        # Timeline visualization
-        st.markdown("### 📅 Visualisasi Rotasi Tanam")
-        
         st.markdown(f"""
         <div class="sync-badge">
-            <strong>Sistem Rotasi untuk Panen Tiap Minggu:</strong><br><br>
-            📅 Tanam setiap <strong>{planting_interval} hari</strong><br>
-            📦 Butuh <strong>{required_groups} grup</strong> bedengan yang berputar<br>
-            🏠 Minmal <strong>{houses_min} house</strong> dengan total <strong>{total_beds_needed}</strong> bedengan<br><br>
-            <em>Saat grup pertama panen, grup terakhir baru ditanam</em>
+            <strong>Sistem Tanam Bergilir per House:</strong><br><br>
+            📅 Minggu 1 → Tanam <strong>House 1</strong><br>
+            📅 Minggu 2 → Tanam <strong>House 2</strong><br>
+            ... sampai ...<br>
+            📅 Minggu {required_houses} → Tanam <strong>House {required_houses}</strong><br><br>
+            🔄 Minggu {required_houses + 1} → House 1 selesai jeda, siap tanam lagi!
         </div>
         """, unsafe_allow_html=True)
         
         # Timeline table
-        st.markdown("#### 📋 Contoh Jadwal Rotasi")
+        st.markdown("#### 📋 Jadwal Rotasi House")
         
         rotation_data = []
         today = datetime.now().date()
         
-        for i in range(min(required_groups, 8)):  # Show max 8 groups
+        for i in range(min(required_houses, 10)):
             plant_date = today + timedelta(days=i * planting_interval)
-            harvest_date = plant_date + timedelta(days=days_until_harvest)
+            harvest_start = plant_date + timedelta(days=days_until_harvest)
+            harvest_end = harvest_start + timedelta(days=calc_harvest)
             
             rotation_data.append({
-                "Grup": f"Grup {i+1}",
-                "Bedengan": f"{beds_per_group} bed",
+                "House": f"House {i+1}",
                 "Tanam": plant_date.strftime("%d %b"),
-                "Panen Mulai": harvest_date.strftime("%d %b"),
-                "Status": "🌱 Vegetatif" if i == 0 else "📋 Rencana"
+                "Panen Mulai": harvest_start.strftime("%d %b"),
+                "Panen Selesai": harvest_end.strftime("%d %b")
             })
         
         st.dataframe(pd.DataFrame(rotation_data), use_container_width=True, hide_index=True)
         
-        st.info(f"""
+        st.success(f"""
         💡 **Kesimpulan:**
-        - Dengan siklus {total_cycle} hari dan interval tanam {planting_interval} hari
-        - Anda membutuhkan **{required_groups} grup × {beds_per_group} bedengan = {total_beds_needed} bedengan**
-        - Ini setara dengan **{houses_min} house** (jika @ {beds_per_house} bed/house)
-        - Panen kontinu setiap **{planting_interval} hari** setelah {days_until_harvest} hari pertama
+        - Siklus **{total_cycle} hari**, tanam tiap **{planting_interval} hari**
+        - Butuh **{required_houses} house** untuk rotasi kontinu
+        - Total **{total_beds} bedengan**
+        - Panen tiap minggu setelah {math.ceil(days_until_harvest/7)} minggu pertama!
         """)
+
