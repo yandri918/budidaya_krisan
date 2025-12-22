@@ -87,9 +87,17 @@ with st.sidebar:
     if map_data and map_data.get("last_clicked"):
         clicked_lat = map_data["last_clicked"]["lat"]
         clicked_lon = map_data["last_clicked"]["lng"]
+        
+        # Check if location changed significantly
         if abs(clicked_lat - st.session_state.map_lat) > 0.0001 or abs(clicked_lon - st.session_state.map_lon) > 0.0001:
+            # Update MAIN state
             st.session_state.map_lat = clicked_lat
             st.session_state.map_lon = clicked_lon
+            
+            # Update WIDGET state explicitly (Important for st.number_input to refresh)
+            st.session_state.env_lat = clicked_lat
+            st.session_state.env_lon = clicked_lon
+            
             st.rerun()
 
 # --- WEATHER API FUNCTIONS ---
