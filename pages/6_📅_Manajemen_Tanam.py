@@ -30,11 +30,12 @@ if 'harvest_sessions' not in st.session_state:
     st.session_state.harvest_sessions = []
 
 # Tabs
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📅 Jadwal Tanam",
     "🌾 Jadwal Panen", 
     "🚜 Persiapan Lahan",
-    "📊 Overview"
+    "📊 Overview",
+    "🧮 Kalkulator House"
 ])
 
 # ==================== TAB 1: JADWAL TANAM ====================
@@ -471,3 +472,107 @@ with tab4:
                 st.session_state.planting_schedule.append(entry)
             
             st.rerun()
+
+# ==================== TAB 5: KALKULATOR HOUSE ====================
+with tab5:
+    st.subheader("🧮 Kalkulator Kebutuhan House/Bedengan")
+    st.info("Hitung berapa grup bedengan/house yang dibutuhkan untuk panen kontinu tiap minggu")
+    
+    col_calc1, col_calc2 = st.columns([1, 1.5])
+    
+    with col_calc1:
+        st.markdown("### ⚙️ Parameter Siklus")
+        
+        calc_veg = st.number_input("🌱 Fase Vegetatif (hari)", 21, 50, 35, key="calc_veg")
+        calc_gen = st.number_input("🌸 Fase Generatif (hari)", 42, 70, 56, key="calc_gen")
+        calc_harvest = st.number_input("🌾 Periode Panen (hari)", 7, 14, 10, key="calc_harv")
+        calc_jeda = st.number_input("🚜 Jeda Lahan (hari)", 10, 21, 14, key="calc_jeda")
+        
+        st.markdown("---")
+        
+        planting_interval = st.number_input(
+            "📅 Interval Tanam (hari)",
+            min_value=5, max_value=14, value=7,
+            help="Jarak waktu antar penanaman grup baru (default: 7 hari/minggu)"
+        )
+        
+        beds_per_group = st.number_input(
+            "📦 Bedengan per Grup Tanam",
+            min_value=1, max_value=20, value=3,
+            help="Jumlah bedengan yang ditanam bersamaan dalam 1 sesi"
+        )
+        
+        beds_per_house = st.number_input(
+            "🏠 Bedengan per House",
+            min_value=4, max_value=50, value=12,
+            help="Kapasitas bedengan dalam 1 greenhouse"
+        )
+    
+    with col_calc2:
+        st.markdown("### 📊 Hasil Kalkulasi")
+        
+        # Calculate
+        total_cycle = calc_veg + calc_gen + calc_harvest + calc_jeda
+        days_until_harvest = calc_veg + calc_gen
+        
+        # Required groups for continuous harvest
+        required_groups = int((days_until_harvest / planting_interval) + 1)
+        total_beds_needed = required_groups * beds_per_group
+        required_houses = (total_beds_needed / beds_per_house)
+        
+        st.metric("📊 Total Siklus", f"{total_cycle} hari", f"~{total_cycle/30:.1f} bulan")
+        st.metric("⏳ Hari Sampai Panen Pertama", f"{days_until_harvest} hari")
+        
+        st.markdown("---")
+        
+        st.metric("🔢 Grup Bedengan Dibutuhkan", f"{required_groups} grup",
+                 f"(@ {beds_per_group} bedengan/grup)")
+        st.metric("📦 Total Bedengan Dibutuhkan", f"{total_beds_needed} bedengan")
+        
+        import math
+        houses_min = math.ceil(required_houses)
+        st.metric("🏠 **JUMLAH HOUSE MINIMAL**", f"{houses_min} house",
+                 f"(@ {beds_per_house} bedengan/house)")
+        
+        st.markdown("---")
+        
+        # Timeline visualization
+        st.markdown("### 📅 Visualisasi Rotasi Tanam")
+        
+        st.markdown(f"""
+        <div class="sync-badge">
+            <strong>Sistem Rotasi untuk Panen Tiap Minggu:</strong><br><br>
+            📅 Tanam setiap <strong>{planting_interval} hari</strong><br>
+            📦 Butuh <strong>{required_groups} grup</strong> bedengan yang berputar<br>
+            🏠 Minmal <strong>{houses_min} house</strong> dengan total <strong>{total_beds_needed}</strong> bedengan<br><br>
+            <em>Saat grup pertama panen, grup terakhir baru ditanam</em>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Timeline table
+        st.markdown("#### 📋 Contoh Jadwal Rotasi")
+        
+        rotation_data = []
+        today = datetime.now().date()
+        
+        for i in range(min(required_groups, 8)):  # Show max 8 groups
+            plant_date = today + timedelta(days=i * planting_interval)
+            harvest_date = plant_date + timedelta(days=days_until_harvest)
+            
+            rotation_data.append({
+                "Grup": f"Grup {i+1}",
+                "Bedengan": f"{beds_per_group} bed",
+                "Tanam": plant_date.strftime("%d %b"),
+                "Panen Mulai": harvest_date.strftime("%d %b"),
+                "Status": "🌱 Vegetatif" if i == 0 else "📋 Rencana"
+            })
+        
+        st.dataframe(pd.DataFrame(rotation_data), use_container_width=True, hide_index=True)
+        
+        st.info(f"""
+        💡 **Kesimpulan:**
+        - Dengan siklus {total_cycle} hari dan interval tanam {planting_interval} hari
+        - Anda membutuhkan **{required_groups} grup × {beds_per_group} bedengan = {total_beds_needed} bedengan**
+        - Ini setara dengan **{houses_min} house** (jika @ {beds_per_house} bed/house)
+        - Panen kontinu setiap **{planting_interval} hari** setelah {days_until_harvest} hari pertama
+        """)
