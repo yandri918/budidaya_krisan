@@ -21,27 +21,27 @@ st.markdown("""
         font-family: 'Outfit', sans-serif;
     }
     
-    /* Gradient Background */
+    /* Modern Gradient Background */
     .stApp {
-        background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fff1f2 100%);
+        background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f9fafb 100%);
     }
     
     /* Hero Section */
     .hero-container {
-        background: linear-gradient(135deg, rgba(236, 72, 153, 0.1) 0%, rgba(255, 255, 255, 0.8) 100%);
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(255, 255, 255, 0.9) 100%);
         backdrop-filter: blur(10px);
         border-radius: 24px;
         padding: 3rem 2rem;
         text-align: center;
-        border: 1px solid rgba(236, 72, 153, 0.2);
-        box-shadow: 0 20px 40px rgba(236, 72, 153, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        box-shadow: 0 20px 40px rgba(16, 185, 129, 0.08);
         margin-bottom: 2rem;
     }
     
     .hero-title {
         font-size: 3rem;
         font-weight: 800;
-        background: linear-gradient(135deg, #be185d 0%, #ec4899 50%, #f472b6 100%);
+        background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #10b981 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin-bottom: 0.5rem;
@@ -56,9 +56,9 @@ st.markdown("""
     
     /* Glass Cards */
     .glass-card {
-        background: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(12px);
-        border: 1px solid rgba(236, 72, 153, 0.2);
+        border: 1px solid rgba(16, 185, 129, 0.15);
         border-radius: 20px;
         padding: 1.5rem;
         transition: all 0.3s ease;
@@ -67,8 +67,8 @@ st.markdown("""
     
     .glass-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 15px 30px rgba(236, 72, 153, 0.15);
-        border-color: rgba(236, 72, 153, 0.4);
+        box-shadow: 0 15px 30px rgba(16, 185, 129, 0.12);
+        border-color: rgba(16, 185, 129, 0.3);
     }
     
     .card-icon {
@@ -79,7 +79,7 @@ st.markdown("""
     .card-title {
         font-size: 1.2rem;
         font-weight: 700;
-        color: #be185d;
+        color: #065f46;
         margin-bottom: 0.5rem;
     }
     
@@ -115,11 +115,11 @@ st.markdown("""
     .badge {
         display: inline-block;
         padding: 0.4rem 1rem;
-        background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
         border-radius: 50px;
         font-size: 0.85rem;
         font-weight: 600;
-        color: #be185d;
+        color: #065f46;
         margin: 0.25rem;
     }
     
@@ -127,7 +127,7 @@ st.markdown("""
     .stat-number {
         font-size: 2rem;
         font-weight: 800;
-        color: #be185d;
+        color: #059669;
     }
     
     .stat-label {
@@ -141,16 +141,17 @@ st.markdown("""
 # ========== HERO SECTION ==========
 st.markdown("""
 <div class="hero-container">
-    <div style="font-size: 4rem; margin-bottom: 1rem;">🌸</div>
-    <h1 class="hero-title">Budidaya Krisan Pro</h1>
+    <div style="font-size: 4rem; margin-bottom: 0.5rem;">🌸</div>
+    <h1 class="hero-title">Budidaya Krisan Spray Jepang</h1>
     <p class="hero-subtitle">
-        Panduan lengkap budidaya bunga Krisan (Chrysanthemum) untuk petani profesional. 
-        Dari persiapan hingga pasca panen.
+        SOP Lengkap dari Hulu hingga Hilir — Panduan profesional budidaya 
+        Chrysanthemum untuk petani dan pengusaha bunga.
     </p>
-    <div style="margin-top: 1.5rem;">
-        <span class="badge">🌺 3 Varietas</span>
-        <span class="badge">📊 Kalkulator ROI</span>
+    <div style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;">
+        <span class="badge">🌺 3 Varietas Warna</span>
+        <span class="badge">📊 Kalkulator Bisnis</span>
         <span class="badge">🌡️ Monitor Lingkungan</span>
+        <span class="badge">📋 SOP Lengkap</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
