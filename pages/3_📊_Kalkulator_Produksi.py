@@ -155,9 +155,10 @@ with tab1:
             help="Lebar standar bedengan krisan: 100-120 cm"
         )
         
+        calculated_beds = num_houses * beds_per_house_config
         num_beds = st.number_input(
             "🔢 Jumlah Bedengan Total", 
-            min_value=1, max_value=100, value=num_houses * beds_per_house_config, step=1,
+            min_value=1, max_value=500, value=min(calculated_beds, 500), step=1,
             help="Total bedengan dalam greenhouse"
         )
         
