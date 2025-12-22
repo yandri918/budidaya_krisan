@@ -498,7 +498,16 @@ with tab4:
 # ==================== TAB 5: KALKULATOR HOUSE ====================
 with tab5:
     st.subheader("🧮 Kalkulator Kebutuhan House")
-    st.info("Hitung berapa house untuk **tanam tiap minggu di house berbeda** secara berurutan")
+    
+    # Check if house config exists
+    if 'house_database' in st.session_state and st.session_state.house_database:
+        existing_houses = len(st.session_state.house_database)
+        existing_beds = sum(h.get('beds', 12) for h in st.session_state.house_database.values())
+        st.success(f"📊 Konfigurasi saat ini: **{existing_houses} house** dengan **{existing_beds} bedengan**")
+    else:
+        existing_houses = 0
+        existing_beds = 0
+        st.info("Hitung berapa house untuk **tanam tiap minggu di house berbeda** secara berurutan")
     
     col_calc1, col_calc2 = st.columns([1, 1.5])
     
@@ -518,9 +527,15 @@ with tab5:
             help="Jarak waktu antar penanaman house berbeda"
         )
         
+        # Get default from house_database or use 12
+        default_beds = 12
+        if 'house_database' in st.session_state and st.session_state.house_database:
+            first_house = list(st.session_state.house_database.values())[0]
+            default_beds = first_house.get('beds', 12)
+        
         beds_per_house = st.number_input(
             "📦 Bedengan per House",
-            min_value=4, max_value=50, value=12,
+            min_value=4, max_value=50, value=default_beds,
             help="Jumlah bedengan dalam 1 greenhouse"
         )
     
@@ -584,4 +599,25 @@ with tab5:
         - Total **{total_beds} bedengan**
         - Panen tiap minggu setelah {math.ceil(days_until_harvest/7)} minggu pertama!
         """)
+        
+        # Comparison with existing config
+        if existing_houses > 0:
+            st.markdown("### 📊 Perbandingan dengan Konfigurasi Saat Ini")
+            
+            comp_cols = st.columns(3)
+            with comp_cols[0]:
+                diff_houses = existing_houses - required_houses
+                delta_text = f"+{diff_houses}" if diff_houses >= 0 else str(diff_houses)
+                st.metric("🏠 House Tersedia", f"{existing_houses}", delta_text)
+            
+            with comp_cols[1]:
+                diff_beds = existing_beds - total_beds
+                delta_beds = f"+{diff_beds}" if diff_beds >= 0 else str(diff_beds)
+                st.metric("📦 Bedengan Tersedia", f"{existing_beds}", delta_beds)
+            
+            with comp_cols[2]:
+                if existing_houses >= required_houses:
+                    st.success("✅ CUKUP untuk rotasi mingguan!")
+                else:
+                    st.warning(f"⚠️ Kurang {required_houses - existing_houses} house")
 
