@@ -99,32 +99,88 @@ with tab1:
 with tab2:
     st.subheader("📊 Input Hasil Grading Aktual")
     
-    # Get potential harvest from session or input
-    col_setup, col_summary = st.columns([2, 1])
+    # ========== PROPORSI BEDENGAN PER VARIETAS ==========
+    st.markdown("### 🌸 Proporsi Bedengan per Varietas")
+    st.caption("Tentukan jumlah bedengan untuk setiap varietas krisan")
     
-    with col_setup:
-        potential_harvest = st.number_input(
-            "🌱 Potensi Tanaman Panen (batang)",
-            min_value=1000, max_value=100000, value=17000, step=1000,
-            help="Jumlah tanaman yang siap panen"
-        )
+    col_bed1, col_bed2, col_bed3, col_bed_total = st.columns([1, 1, 1, 1])
     
-    with col_summary:
-        st.markdown(f"""
-        <div class="summary-box">
-            💡 <strong>Masukkan hasil grading dari panen.</strong><br>
-            Potensi tanaman panen: <strong>{potential_harvest:,}</strong> batang
-        </div>
-        """, unsafe_allow_html=True)
+    with col_bed1:
+        beds_putih = st.number_input("🤍 Bedengan Putih", 0, 50, 4, key="beds_putih")
+    with col_bed2:
+        beds_pink = st.number_input("💗 Bedengan Pink", 0, 50, 4, key="beds_pink")
+    with col_bed3:
+        beds_kuning = st.number_input("💛 Bedengan Kuning", 0, 50, 4, key="beds_kuning")
+    with col_bed_total:
+        total_beds = beds_putih + beds_pink + beds_kuning
+        st.metric("📦 Total Bedengan", total_beds)
+    
+    # Calculate plants per variety (assuming same density)
+    plants_per_bed = st.number_input("🌱 Tanaman per Bedengan", 500, 3000, 1400, step=100,
+                                     help="Berdasarkan panjang × baris × jarak tanam")
+    
+    plants_putih = beds_putih * plants_per_bed
+    plants_pink = beds_pink * plants_per_bed
+    plants_kuning = beds_kuning * plants_per_bed
+    total_plants = plants_putih + plants_pink + plants_kuning
+    
+    # Display proportion
+    st.markdown("### 📊 Proporsi Tanaman per Varietas")
+    
+    prop_cols = st.columns(4)
+    
+    with prop_cols[0]:
+        pct_putih = (plants_putih / total_plants * 100) if total_plants > 0 else 0
+        st.metric("🤍 Krisan Putih", f"{plants_putih:,}", f"{pct_putih:.1f}%")
+    with prop_cols[1]:
+        pct_pink = (plants_pink / total_plants * 100) if total_plants > 0 else 0
+        st.metric("💗 Krisan Pink", f"{plants_pink:,}", f"{pct_pink:.1f}%")
+    with prop_cols[2]:
+        pct_kuning = (plants_kuning / total_plants * 100) if total_plants > 0 else 0
+        st.metric("💛 Krisan Kuning", f"{plants_kuning:,}", f"{pct_kuning:.1f}%")
+    with prop_cols[3]:
+        st.metric("🌸 **TOTAL**", f"{total_plants:,}")
     
     st.markdown("---")
     
-    # Initialize session state for grades
-    if 'grading_data' not in st.session_state:
-        st.session_state.grading_data = {
-            'g60': 0, 'g80': 0, 'g100': 0, 'g120': 0, 'g160': 0,
-            'r80': 0, 'r100': 0, 'r160': 0, 'r200': 0
+    # ========== PILIH VARIETAS UNTUK GRADING ==========
+    st.markdown("### 📝 Input Grading per Varietas")
+    
+    selected_variety = st.radio(
+        "Pilih Varietas untuk Input Grading:",
+        ["🤍 Krisan Putih", "💗 Krisan Pink", "💛 Krisan Kuning"],
+        horizontal=True
+    )
+    
+    # Map variety to key
+    variety_key = {
+        "🤍 Krisan Putih": "putih",
+        "💗 Krisan Pink": "pink", 
+        "💛 Krisan Kuning": "kuning"
+    }[selected_variety]
+    
+    variety_plants = {
+        "putih": plants_putih,
+        "pink": plants_pink,
+        "kuning": plants_kuning
+    }
+    
+    potential_harvest = variety_plants[variety_key]
+    
+    st.info(f"📊 Potensi panen {selected_variety}: **{potential_harvest:,}** batang ({beds_putih if variety_key == 'putih' else beds_pink if variety_key == 'pink' else beds_kuning} bedengan)")
+    
+    st.markdown("---")
+    
+    # Initialize session state for grades per variety
+    if 'grading_data_variety' not in st.session_state:
+        st.session_state.grading_data_variety = {
+            'putih': {'g60': 0, 'g80': 0, 'g100': 0, 'g120': 0, 'g160': 0, 'r80': 0, 'r100': 0, 'r160': 0, 'r200': 0},
+            'pink': {'g60': 0, 'g80': 0, 'g100': 0, 'g120': 0, 'g160': 0, 'r80': 0, 'r100': 0, 'r160': 0, 'r200': 0},
+            'kuning': {'g60': 0, 'g80': 0, 'g100': 0, 'g120': 0, 'g160': 0, 'r80': 0, 'r100': 0, 'r160': 0, 'r200': 0},
         }
+    
+    # Use current variety data
+    grading_data = st.session_state.grading_data_variety[variety_key]
     
     # GRADE NORMAL (Panjang 90 cm)
     st.markdown("### ✅ Grade Normal (Panjang 90 cm)")
@@ -148,10 +204,10 @@ with tab2:
             </div>
             """, unsafe_allow_html=True)
             
-            st.session_state.grading_data[grade['key']] = st.number_input(
+            grading_data[grade['key']] = st.number_input(
                 "Jumlah Ikat",
-                min_value=0, max_value=500, value=st.session_state.grading_data[grade['key']],
-                key=f"input_{grade['key']}",
+                min_value=0, max_value=500, value=grading_data[grade['key']],
+                key=f"input_{variety_key}_{grade['key']}",
                 label_visibility="visible"
             )
             
@@ -181,10 +237,10 @@ with tab2:
             </div>
             """, unsafe_allow_html=True)
             
-            st.session_state.grading_data[grade['key']] = st.number_input(
+            grading_data[grade['key']] = st.number_input(
                 "Jml Ikat",
-                min_value=0, max_value=500, value=st.session_state.grading_data[grade['key']],
-                key=f"input_{grade['key']}",
+                min_value=0, max_value=500, value=grading_data[grade['key']],
+                key=f"input_{variety_key}_{grade['key']}",
                 label_visibility="visible"
             )
             
@@ -192,14 +248,14 @@ with tab2:
     
     st.markdown("---")
     
-    # CALCULATE TOTALS
+    # CALCULATE TOTALS (for current variety)
     total_normal_stems = sum(
-        st.session_state.grading_data[g['key']] * g['qty'] 
+        grading_data[g['key']] * g['qty'] 
         for g in normal_grades
     )
     
     total_bs_stems = sum(
-        st.session_state.grading_data[g['key']] * g['qty'] 
+        grading_data[g['key']] * g['qty'] 
         for g in bs_grades
     )
     
@@ -209,12 +265,12 @@ with tab2:
     
     # Revenue calculation
     revenue_normal = sum(
-        st.session_state.grading_data[g['key']] * g['price'] 
+        grading_data[g['key']] * g['price'] 
         for g in normal_grades
     )
     
     revenue_bs = sum(
-        st.session_state.grading_data[g['key']] * g['price'] 
+        grading_data[g['key']] * g['price'] 
         for g in bs_grades
     )
     
