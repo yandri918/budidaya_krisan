@@ -49,9 +49,10 @@ st.markdown("""
 st.markdown("## 📦 Teknologi Pasca Panen Krisan Spray")
 st.info("Panduan pemanenan, grading input aktual, handling, dan perpanjangan vase life.")
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "✂️ Teknik Panen", 
     "📊 Input Grading", 
+    "📔 Jurnal Biaya",
     "📋 Standar Grade",
     "💧 Vase Life", 
     "📦 Packing"
@@ -797,8 +798,162 @@ with tab2:
     else:
         st.info("💡 Masukkan data grading di atas untuk melihat analisis perbandingan.")
 
-# TAB 3: Standar Grading
+# TAB 3: Jurnal Biaya Harian
 with tab3:
+    st.subheader("📔 Jurnal Biaya Harian")
+    st.info("Catat biaya aktual harian untuk dibandingkan dengan estimasi RAB")
+    
+    # Initialize journal session state
+    if 'cost_journal' not in st.session_state:
+        st.session_state.cost_journal = []
+    
+    # Sync RAB data
+    rab_data = st.session_state.get('krisan_data', {})
+    has_rab = rab_data.get('rab_total_operational', 0) > 0
+    
+    if has_rab:
+        st.markdown(f"""
+        <div class="sync-badge">
+            💰 <strong>Estimasi RAB dari Kalkulator Produksi:</strong><br>
+            🌱 Bibit: <strong>Rp {rab_data.get('rab_bibit', 0):,.0f}</strong> |
+            🧪 Pupuk: <strong>Rp {rab_data.get('rab_pupuk', 0):,.0f}</strong> |
+            🛡️ Pestisida: <strong>Rp {rab_data.get('rab_pestisida', 0):,.0f}</strong><br>
+            👷 TK: <strong>Rp {rab_data.get('rab_tenaga_kerja', 0):,.0f}</strong> |
+            ⚡ Listrik: <strong>Rp {rab_data.get('rab_listrik', 0):,.0f}</strong> |
+            📦 Lainnya: <strong>Rp {rab_data.get('rab_lainnya', 0):,.0f}</strong> |
+            💰 Total: <strong>Rp {rab_data.get('rab_total_operational', 0):,.0f}</strong>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.warning("⚠️ Isi data RAB di Kalkulator Produksi → Tab RAB untuk perbandingan")
+    
+    st.markdown("---")
+    
+    # Input form
+    st.markdown("### ➕ Input Biaya Baru")
+    
+    col_inp1, col_inp2, col_inp3 = st.columns([1, 1.5, 1])
+    
+    with col_inp1:
+        journal_date = st.date_input("📅 Tanggal", value=datetime.now().date(), key="journal_date")
+        
+        category_options = ["🌱 Bibit", "🧪 Pupuk", "🛡️ Pestisida", "👷 Tenaga Kerja", "⚡ Listrik", "📦 Lain-lain"]
+        journal_category = st.selectbox("📂 Kategori", category_options, key="journal_cat")
+    
+    with col_inp2:
+        journal_desc = st.text_input("📝 Deskripsi/Keterangan", placeholder="Contoh: Beli NPK 50kg", key="journal_desc")
+        journal_amount = st.number_input("💰 Jumlah Biaya (Rp)", min_value=0, max_value=100000000, value=0, step=10000, key="journal_amt")
+    
+    with col_inp3:
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("✅ Simpan Entri", type="primary", use_container_width=True):
+            if journal_amount > 0:
+                entry = {
+                    "date": journal_date.strftime("%Y-%m-%d"),
+                    "day": ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"][journal_date.weekday()],
+                    "category": journal_category,
+                    "description": journal_desc,
+                    "amount": journal_amount
+                }
+                st.session_state.cost_journal.append(entry)
+                st.success(f"✅ Biaya Rp {journal_amount:,} tersimpan!")
+                st.rerun()
+            else:
+                st.error("⚠️ Jumlah biaya harus lebih dari 0")
+    
+    st.markdown("---")
+    
+    # Journal history
+    st.markdown("### 📋 Riwayat Transaksi")
+    
+    if st.session_state.cost_journal:
+        df_journal = pd.DataFrame(st.session_state.cost_journal)
+        df_journal['amount_formatted'] = df_journal['amount'].apply(lambda x: f"Rp {x:,}")
+        
+        st.dataframe(
+            df_journal[['date', 'day', 'category', 'description', 'amount_formatted']].rename(columns={
+                'date': 'Tanggal', 'day': 'Hari', 'category': 'Kategori', 
+                'description': 'Keterangan', 'amount_formatted': 'Jumlah'
+            }),
+            use_container_width=True, hide_index=True
+        )
+        
+        # Summary by category
+        st.markdown("### 📊 Ringkasan per Kategori")
+        
+        # Calculate actual totals per category
+        actual_totals = {}
+        for cat in category_options:
+            actual_totals[cat] = sum(e['amount'] for e in st.session_state.cost_journal if e['category'] == cat)
+        
+        total_actual = sum(actual_totals.values())
+        
+        # RAB mapping
+        rab_mapping = {
+            "🌱 Bibit": rab_data.get('rab_bibit', 0),
+            "🧪 Pupuk": rab_data.get('rab_pupuk', 0),
+            "🛡️ Pestisida": rab_data.get('rab_pestisida', 0),
+            "👷 Tenaga Kerja": rab_data.get('rab_tenaga_kerja', 0),
+            "⚡ Listrik": rab_data.get('rab_listrik', 0),
+            "📦 Lain-lain": rab_data.get('rab_lainnya', 0)
+        }
+        
+        total_rab = rab_data.get('rab_total_operational', 0)
+        
+        # Comparison table
+        comparison_rows = []
+        for cat in category_options:
+            actual = actual_totals.get(cat, 0)
+            estimated = rab_mapping.get(cat, 0)
+            diff = actual - estimated
+            pct = (diff / estimated * 100) if estimated > 0 else 0
+            status = "✅ Hemat" if diff < 0 else ("⚠️ Over" if diff > 0 else "➖ Sama")
+            
+            comparison_rows.append({
+                "Kategori": cat,
+                "Estimasi RAB": f"Rp {estimated:,}",
+                "Aktual": f"Rp {actual:,}",
+                "Selisih": f"Rp {diff:+,}",
+                "Persentase": f"{pct:+.1f}%",
+                "Status": status
+            })
+        
+        # Total row
+        total_diff = total_actual - total_rab
+        total_pct = (total_diff / total_rab * 100) if total_rab > 0 else 0
+        total_status = "✅ Hemat" if total_diff < 0 else ("⚠️ Over Budget" if total_diff > 0 else "➖ Tepat")
+        
+        comparison_rows.append({
+            "Kategori": "💰 **TOTAL**",
+            "Estimasi RAB": f"Rp {total_rab:,}",
+            "Aktual": f"Rp {total_actual:,}",
+            "Selisih": f"Rp {total_diff:+,}",
+            "Persentase": f"{total_pct:+.1f}%",
+            "Status": total_status
+        })
+        
+        st.dataframe(pd.DataFrame(comparison_rows), use_container_width=True, hide_index=True)
+        
+        # Summary metrics
+        col_m1, col_m2, col_m3 = st.columns(3)
+        with col_m1:
+            st.metric("💰 Total RAB", f"Rp {total_rab:,}")
+        with col_m2:
+            st.metric("💵 Total Aktual", f"Rp {total_actual:,}")
+        with col_m3:
+            delta_color = "inverse" if total_diff > 0 else "normal"
+            st.metric("📊 Selisih", f"Rp {total_diff:+,}", delta=f"{total_pct:+.1f}%", delta_color=delta_color)
+        
+        # Clear button
+        st.markdown("---")
+        if st.button("🗑️ Hapus Semua Data Jurnal", type="secondary"):
+            st.session_state.cost_journal = []
+            st.rerun()
+    else:
+        st.info("📝 Belum ada data jurnal. Mulai input biaya di atas.")
+
+# TAB 4: Standar Grading (was tab3)
+with tab4:
     st.subheader("📋 Standar Grading Krisan Spray")
     
     grading_criteria = pd.DataFrame({

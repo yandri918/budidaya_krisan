@@ -406,6 +406,15 @@ with tab3:
         
         total_operational = cost_cuttings_total + cost_fertilizer + cost_pesticide + cost_labor + cost_electricity_total + cost_other
         
+        # Save RAB estimates to session state for sync with Jurnal Harian
+        st.session_state.krisan_data['rab_bibit'] = cost_cuttings_total
+        st.session_state.krisan_data['rab_pupuk'] = cost_fertilizer
+        st.session_state.krisan_data['rab_pestisida'] = cost_pesticide
+        st.session_state.krisan_data['rab_tenaga_kerja'] = cost_labor
+        st.session_state.krisan_data['rab_listrik'] = cost_electricity_total
+        st.session_state.krisan_data['rab_lainnya'] = cost_other
+        st.session_state.krisan_data['rab_total_operational'] = total_operational
+        
         st.markdown("---")
         st.metric("💵 **TOTAL OPERASIONAL/SIKLUS**", f"Rp {total_operational:,.0f}")
     
