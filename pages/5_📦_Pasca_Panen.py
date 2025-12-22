@@ -515,6 +515,37 @@ with tab2:
         )])
         fig_var.update_layout(title="Distribusi Batang per Varietas", height=300)
         st.plotly_chart(fig_var, use_container_width=True)
+        
+        # ========== SIMPAN GRADING KE RIWAYAT ==========
+        st.markdown("---")
+        st.markdown("### 💾 Simpan Laporan Grading")
+        
+        st.info(f"📊 Total: **{grand_total_stems:,}** tangkai | 💵 Pendapatan: **Rp {grand_total_revenue:,.0f}**")
+        
+        # Calculate Grade A percentage (normal grades proportion)
+        grade_a_stems = totals_putih['normal'] + totals_pink['normal'] + totals_kuning['normal']
+        grade_a_pct = (grade_a_stems / grand_total_stems * 100) if grand_total_stems > 0 else 0
+        
+        if st.button("💾 Simpan ke Riwayat Panen", type="primary", use_container_width=True, key="save_grading_to_history"):
+            # Initialize harvest history if not exists
+            if 'harvest_history' not in st.session_state:
+                st.session_state.harvest_history = []
+            
+            # Create entry from grading data
+            new_entry = {
+                "Tanggal": report_date.strftime("%Y-%m-%d"),
+                "House": house_name,
+                "Tangkai": grand_total_stems,
+                "Grade A %": round(grade_a_pct, 1),
+                "Pendapatan": grand_total_revenue,
+                "Putih": totals_putih['stems'],
+                "Pink": totals_pink['stems'],
+                "Kuning": totals_kuning['stems']
+            }
+            
+            st.session_state.harvest_history.append(new_entry)
+            st.success(f"✅ Data grading {house_name} tanggal {report_date.strftime('%d/%m/%Y')} tersimpan ke Riwayat Panen!")
+            st.balloons()
     
     # Detailed breakdown table
     with st.expander("📋 Lihat Rincian per Grade", expanded=False):
