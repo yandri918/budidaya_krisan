@@ -1,12 +1,10 @@
-# 📈 Pantau Pertumbuhan & AI Analysis
-# Monitoring pertumbuhan harian/mingguan dengan standar baku dan analisis AI
-
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime, timedelta
 import random
+import requests
 
 st.set_page_config(page_title="Pantau Pertumbuhan", page_icon="📈", layout="wide")
 
@@ -53,6 +51,13 @@ st.markdown("""
         font-size: 0.8rem;
         font-weight: 600;
     }
+    .weather-widget {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -62,6 +67,17 @@ st.info("Monitor perkembangan tanaman mingguan dan dapatkan rekomendasi budidaya
 # Initialize session state for growth data
 if 'growth_data' not in st.session_state:
     st.session_state.growth_data = []
+
+# Fetch Weather Function
+def get_open_meteo_weather(lat, lon):
+    try:
+        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,rain,surface_pressure,wind_speed_10m&timezone=auto"
+        response = requests.get(url)
+        data = response.json()
+        return data['current']
+    except Exception as e:
+        st.error(f"Gagal mengambil data cuaca: {e}")
+        return None
 
 # ==================== DATA INPUT ====================
 with st.sidebar:
@@ -84,6 +100,27 @@ with st.sidebar:
     input_week = st.number_input("📅 Minggu ke- (HST)", 1, 16, 4, help="Hari Setelah Tanam (dalam minggu)")
     
     st.markdown("---")
+    st.markdown("### 📍 Lokasi Kebun (Open-Meteo)")
+    lat = st.number_input("Latitude", value=-6.80, format="%.4f")
+    lon = st.number_input("Longitude", value=107.60, format="%.4f")
+    
+    current_weather = None
+    if st.button("📡 Ambil Data Cuaca Real-time"):
+        current_weather = get_open_meteo_weather(lat, lon)
+        if current_weather:
+            st.session_state.weather_cache = current_weather
+            st.success("Data Open-Meteo berhasil diambil!")
+    
+    # Use cached weather if available logic
+    default_temp = 24.5
+    default_humid = 75
+    
+    if 'weather_cache' in st.session_state:
+        weather = st.session_state.weather_cache
+        default_temp = float(weather.get('temperature_2m', 24.5))
+        default_humid = int(weather.get('relative_humidity_2m', 75))
+
+    st.markdown("---")
     st.markdown("### 🌱 Parameter Tanaman")
     
     in_height = st.number_input("Tinggi Tanaman (cm)", 0.0, 150.0, 25.0, step=0.5)
@@ -93,8 +130,8 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### 🌡️ Parameter Lingkungan")
     
-    in_temp = st.number_input("Suhu Rata-rata (°C)", 10.0, 40.0, 24.5, step=0.5)
-    in_humidity = st.number_input("Kelembaban (%)", 0, 100, 75, step=5)
+    in_temp = st.number_input("Suhu Rata-rata (°C)", 10.0, 40.0, default_temp, step=0.1)
+    in_humidity = st.number_input("Kelembaban (%)", 0, 100, default_humid, step=1)
     
     if st.button("💾 Simpan Data", type="primary", use_container_width=True):
         new_record = {
@@ -126,6 +163,25 @@ standards = {
 
 with col_main:
     st.subheader(f"📊 Grafik Pertumbuhan {input_house}")
+    
+    # Weather Widget
+    if 'weather_cache' in st.session_state:
+        w = st.session_state.weather_cache
+        st.markdown(f"""
+        <div class="weather-widget">
+            <div style="font-weight:bold; font-size:1.1rem; margin-bottom:5px;">🌤️ Cuaca Real-time (Open-Meteo)</div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <span style="font-size:2rem; font-weight:bold;">{w.get('temperature_2m')}°C</span><br>
+                    <span>Kelembaban: {w.get('relative_humidity_2m')}%</span>
+                </div>
+                <div style="text-align:right;">
+                    <span>Hujan: {w.get('rain')} mm</span><br>
+                    <span>Angin: {w.get('wind_speed_10m')} km/h</span>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
     
     # Filter data for selected house
     house_data = [d for d in st.session_state.growth_data if d['house'] == input_house]
@@ -263,6 +319,8 @@ with col_ai:
             h_curr = last_record['height']
             l_curr = last_record['leaves']
             d_curr = last_record['diameter']
+            temp_curr = last_record.get('temp', 24)
+            humid_curr = last_record.get('humidity', 75)
             
             # Run "AI"
             status, color_css, ai_advice = analyze_plant_health(w_curr, h_curr, l_curr, d_curr)
@@ -280,6 +338,31 @@ with col_ai:
             for tip in ai_advice:
                 st.markdown(f"- {tip}")
             
+            st.markdown("---")
+            st.markdown("#### 🌡️ Analisis Lingkungan")
+            
+            # Agro-climate analysis
+            env_status = []
+            
+            # Temp Analysis
+            if temp_curr > 28:
+                env_status.append(f"⚠️ **Suhu Panas ({temp_curr}°C):** Risiko bunga kecil/pudar. Nyalakan misting siang hari.")
+            elif temp_curr < 15:
+                env_status.append(f"❄️ **Suhu Dingin ({temp_curr}°C):** Pertumbuhan melambat. Tutup screen malam hari.")
+            else:
+                env_status.append(f"✅ **Suhu Ideal ({temp_curr}°C)**")
+                
+            # Humidity Analysis
+            if humid_curr > 90:
+                env_status.append(f"💦 **Lembab ({humid_curr}%):** Risiko jamur karat putih! Tingkatkan sirkulasi udara.")
+            elif humid_curr < 60:
+                env_status.append(f"🌵 **Kering ({humid_curr}%):** Risiko layu. Lakukan penyiraman lantai.")
+            else:
+                env_status.append(f"✅ **Kelembaban Ideal ({humid_curr}%)**")
+            
+            for status in env_status:
+                st.markdown(f"{status}")
+
             st.markdown("---")
             st.markdown(f"**Diameter Batang:** {d_curr} mm")
             if d_curr < 3.0 and w_curr > 4:
