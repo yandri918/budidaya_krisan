@@ -45,15 +45,32 @@ st.markdown("""
 st.markdown("## 📊 Kalkulator Budidaya Krisan Spray")
 st.info("Perhitungan lengkap: Populasi, Irigasi, RAB, dan Rekomendasi AI Optimasi")
 
+# ========== DEFAULT CONFIGURATION ==========
+# Default values for consistent calculation across all modules
+DEFAULT_CONFIG = {
+    'beds_per_house': 12,
+    'bed_length': 50,       # meter
+    'bed_width': 100,       # cm
+    'rows_per_bed': 6,
+    'plant_spacing': 12.5,  # cm
+}
+
+# Calculate default plants per bed: (length_cm / spacing) * rows
+DEFAULT_PLANTS_PER_BED = int((DEFAULT_CONFIG['bed_length'] * 100) / DEFAULT_CONFIG['plant_spacing']) * DEFAULT_CONFIG['rows_per_bed']
+
 # ========== INITIALIZE SESSION STATE ==========
 if 'krisan_data' not in st.session_state:
     st.session_state.krisan_data = {
         'total_plants': 0,
         'total_bed_area': 0,
-        'num_beds': 0,
+        'num_beds': DEFAULT_CONFIG['beds_per_house'],
         'total_stems': 0,
         'nozzle_count': 0,
         'irrigation_cost': 0,
+        'bed_length': DEFAULT_CONFIG['bed_length'],
+        'rows_per_bed': DEFAULT_CONFIG['rows_per_bed'],
+        'plant_spacing': DEFAULT_CONFIG['plant_spacing'],
+        'plants_per_bed': DEFAULT_PLANTS_PER_BED,
     }
 
 # ========== TABS ==========
@@ -127,8 +144,8 @@ with tab1:
             with row1[2]:
                 h_length = st.number_input(
                     "Panjang (m)",
-                    min_value=5, max_value=50,
-                    value=existing.get('bed_length', 25),
+                    min_value=5, max_value=100,
+                    value=existing.get('bed_length', 50),
                     key=f"h_length_{i+1}"
                 )
             
@@ -136,7 +153,7 @@ with tab1:
                 h_rows = st.number_input(
                     "Baris/bed",
                     min_value=4, max_value=12,
-                    value=existing.get('rows_per_bed', 8),
+                    value=existing.get('rows_per_bed', 6),
                     key=f"h_rows_{i+1}"
                 )
             
