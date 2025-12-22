@@ -49,13 +49,14 @@ st.markdown("""
 st.markdown("## 📦 Teknologi Pasca Panen Krisan Spray")
 st.info("Panduan pemanenan, grading input aktual, handling, dan perpanjangan vase life.")
 
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "✂️ Teknik Panen", 
     "📊 Input Grading", 
     "📔 Jurnal Biaya",
     "📋 Standar Grade",
     "💧 Vase Life", 
-    "📦 Packing"
+    "📦 Packing",
+    "📤 Export & Riwayat"
 ])
 
 # TAB 1: Teknik Panen
@@ -1067,6 +1068,158 @@ with tab5:
         | >200 km | 2-4°C | 24-48 jam |
         """)
 
+# TAB 7: Export & Riwayat
+with tab7:
+    st.subheader("📤 Export Data & Riwayat Panen")
+    
+    col_export, col_history = st.columns([1, 1.5])
+    
+    with col_export:
+        st.markdown("### 📥 Export Laporan")
+        
+        # Initialize harvest history if not exists
+        if 'harvest_history' not in st.session_state:
+            st.session_state.harvest_history = []
+        
+        # Export grading data
+        if 'grading_data' in st.session_state and st.session_state.grading_data:
+            grading_df = pd.DataFrame(st.session_state.grading_data)
+            
+            csv_grading = grading_df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                "📊 Download Grading Data (CSV)",
+                data=csv_grading,
+                file_name=f"grading_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+        else:
+            st.info("Belum ada data grading untuk di-export")
+        
+        st.markdown("---")
+        
+        # Export journal data
+        if 'cost_journal' in st.session_state and st.session_state.cost_journal:
+            journal_df = pd.DataFrame(st.session_state.cost_journal)
+            
+            csv_journal = journal_df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                "📔 Download Jurnal Biaya (CSV)",
+                data=csv_journal,
+                file_name=f"jurnal_biaya_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+        else:
+            st.info("Belum ada data jurnal biaya")
+        
+        st.markdown("---")
+        
+        # Export harvest history
+        if st.session_state.harvest_history:
+            history_df = pd.DataFrame(st.session_state.harvest_history)
+            
+            csv_history = history_df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                "🌾 Download Riwayat Panen (CSV)",
+                data=csv_history,
+                file_name=f"riwayat_panen_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+    
+    with col_history:
+        st.markdown("### 🌾 Riwayat Panen")
+        
+        # Add new harvest entry
+        with st.expander("➕ Tambah Data Panen Baru", expanded=False):
+            h_date = st.date_input("📅 Tanggal Panen", datetime.now().date(), key="harvest_date")
+            
+            # Get house list
+            if 'house_database' in st.session_state and st.session_state.house_database:
+                house_options = [h['name'] for h in st.session_state.house_database.values()]
+            else:
+                house_options = ["House 1", "House 2", "House 3"]
+            
+            h_house = st.selectbox("🏠 House", house_options, key="harvest_house")
+            
+            h_cols = st.columns(3)
+            with h_cols[0]:
+                h_stems = st.number_input("🌸 Total Tangkai", 0, 100000, 1000, key="harvest_stems")
+            with h_cols[1]:
+                h_grade_a = st.number_input("✅ Grade A (%)", 0, 100, 60, key="harvest_grade_a")
+            with h_cols[2]:
+                h_revenue = st.number_input("💵 Pendapatan (Rp)", 0, 100000000, 0, step=100000, key="harvest_revenue")
+            
+            if st.button("💾 Simpan Panen", type="primary", key="save_harvest"):
+                new_entry = {
+                    "Tanggal": h_date.strftime("%Y-%m-%d"),
+                    "House": h_house,
+                    "Tangkai": h_stems,
+                    "Grade A %": h_grade_a,
+                    "Pendapatan": h_revenue
+                }
+                st.session_state.harvest_history.append(new_entry)
+                st.success("✅ Data panen tersimpan!")
+                st.rerun()
+        
+        # Show history
+        if st.session_state.harvest_history:
+            st.markdown("#### 📋 Data Panen")
+            history_df = pd.DataFrame(st.session_state.harvest_history)
+            st.dataframe(history_df, use_container_width=True, hide_index=True)
+            
+            # Summary metrics
+            total_stems = history_df['Tangkai'].sum()
+            total_revenue = history_df['Pendapatan'].sum()
+            avg_grade = history_df['Grade A %'].mean()
+            
+            m1, m2, m3 = st.columns(3)
+            with m1:
+                st.metric("🌸 Total Tangkai", f"{total_stems:,}")
+            with m2:
+                st.metric("💵 Total Pendapatan", f"Rp {total_revenue:,}")
+            with m3:
+                st.metric("📊 Rata-rata Grade A", f"{avg_grade:.1f}%")
+            
+            st.markdown("---")
+            
+            # Trend chart
+            st.markdown("#### 📈 Grafik Tren Panen")
+            
+            import plotly.express as px
+            
+            fig = px.bar(
+                history_df, 
+                x='Tanggal', 
+                y='Tangkai',
+                color='House',
+                title="Produksi per Tanggal",
+                color_discrete_sequence=px.colors.qualitative.Set2
+            )
+            fig.update_layout(height=300)
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Revenue trend
+            if total_revenue > 0:
+                fig2 = px.line(
+                    history_df,
+                    x='Tanggal',
+                    y='Pendapatan',
+                    markers=True,
+                    title="Tren Pendapatan"
+                )
+                fig2.update_layout(height=250)
+                st.plotly_chart(fig2, use_container_width=True)
+            
+            # Clear button
+            if st.button("🗑️ Hapus Semua Riwayat", key="clear_history"):
+                st.session_state.harvest_history = []
+                st.rerun()
+        else:
+            st.info("📊 Belum ada riwayat panen. Tambahkan data melalui form di atas.")
+
 # Footer
 st.markdown("---")
 st.caption("🌸 Budidaya Krisan Pro - Teknologi Pasca Panen & Grading")
+
