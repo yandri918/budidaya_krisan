@@ -5,6 +5,8 @@ import plotly.express as px
 from datetime import datetime, timedelta
 import random
 import requests
+import folium
+from streamlit_folium import st_folium
 
 st.set_page_config(page_title="Pantau Pertumbuhan", page_icon="📈", layout="wide")
 
@@ -110,6 +112,16 @@ with st.sidebar:
         if current_weather:
             st.session_state.weather_cache = current_weather
             st.success("Data Open-Meteo berhasil diambil!")
+            
+    # Interactive Map
+    with st.expander("🗺️ Lihat Peta Lokasi", expanded=True):
+        m = folium.Map(location=[lat, lon], zoom_start=13)
+        folium.Marker(
+            [lat, lon], 
+            popup="Lokasi Kebun", 
+            tooltip="Kebun Krisan"
+        ).add_to(m)
+        st_folium(m, height=200, width=280)
     
     # Use cached weather if available logic
     default_temp = 24.5
