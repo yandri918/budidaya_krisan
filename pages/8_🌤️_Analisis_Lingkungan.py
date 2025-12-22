@@ -51,7 +51,7 @@ st.info("Perencanaan budidaya berbasis data cuaca real-time dan prakiraan 7 hari
 
 # --- SIDEBAR LOCATION ---
 with st.sidebar:
-    st.header("📍 Lokasi Kebun")
+    st.header("📍 Pilih Lokasi Kebun")
     
     # Initialize lat/lon in session state if not exist
     if 'map_lat' not in st.session_state:
