@@ -97,8 +97,58 @@ with tab1:
 
 # TAB 2: Input Grading Aktual
 with tab2:
-    st.subheader("📊 Input Hasil Grading Aktual")
+    st.subheader("📊 Input Hasil Grading Harian")
     
+    # ========== HEADER LAPORAN HARIAN ==========
+    st.markdown("### 📋 Informasi Laporan")
+    
+    report_cols = st.columns([1, 1, 1.5])
+    
+    with report_cols[0]:
+        report_date = st.date_input(
+            "📅 Tanggal",
+            value=datetime.now().date(),
+            help="Tanggal panen/grading"
+        )
+        
+        # Day name in Indonesian
+        day_names = {
+            0: "Senin", 1: "Selasa", 2: "Rabu", 3: "Kamis", 
+            4: "Jumat", 5: "Sabtu", 6: "Minggu"
+        }
+        day_name = day_names[report_date.weekday()]
+        st.info(f"**Hari:** {day_name}")
+    
+    with report_cols[1]:
+        # Initialize house list in session state
+        if 'house_list' not in st.session_state:
+            st.session_state.house_list = ["House 1", "House 2", "House 3"]
+        
+        house_name = st.selectbox(
+            "🏠 Nama Greenhouse/House",
+            st.session_state.house_list,
+            help="Pilih greenhouse untuk grading"
+        )
+        
+        # Option to add new house
+        with st.expander("➕ Tambah House Baru"):
+            new_house = st.text_input("Nama House Baru")
+            if st.button("Tambah"):
+                if new_house and new_house not in st.session_state.house_list:
+                    st.session_state.house_list.append(new_house)
+                    st.success(f"✅ {new_house} ditambahkan!")
+                    st.rerun()
+    
+    with report_cols[2]:
+        st.markdown(f"""
+        <div class="summary-box">
+            📊 <strong>Laporan Grading</strong><br>
+            📅 {day_name}, {report_date.strftime('%d %B %Y')}<br>
+            🏠 <strong>{house_name}</strong>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("---")
     # ========== SYNC DATA DARI KALKULATOR PRODUKSI ==========
     # Check if synced data exists
     has_synced_data = 'krisan_data' in st.session_state and st.session_state.krisan_data.get('beds_putih', 0) > 0
