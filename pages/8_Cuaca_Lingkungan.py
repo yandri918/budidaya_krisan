@@ -1,4 +1,4 @@
-# 🌤️ Analisis Lingkungan & Cuaca
+# 🌤️ Analisis Cuaca & Lingkungan
 # Dashboard cuaca khusus pertanian untuk perencanaan budidaya krisan
 
 import streamlit as st
@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import folium
 from streamlit_folium import st_folium
 
-st.set_page_config(page_title="Analisis Lingkungan", page_icon="🌤️", layout="wide")
+st.set_page_config(page_title="Analisis Cuaca", page_icon="🌤️", layout="wide")
 
 # CSS Custom
 st.markdown("""
@@ -46,7 +46,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🌤️ Analisis Lingkungan & Cuaca")
+st.title("🌤️ Analisis Cuaca & Lingkungan")
 st.info("Perencanaan budidaya berbasis data cuaca real-time dan prakiraan 7 hari.")
 
 # --- SIDEBAR LOCATION ---
