@@ -58,20 +58,12 @@ with st.sidebar:
         st.session_state.map_lat = -6.80
     if 'map_lon' not in st.session_state:
         st.session_state.map_lon = 107.60
-
-    # Input widgets linked to session state
-    lat = st.number_input("Latitude", value=st.session_state.map_lat, format="%.4f", key="env_lat")
-    lon = st.number_input("Longitude", value=st.session_state.map_lon, format="%.4f", key="env_lon")
-    
-    # Sync input changes back to map state
-    st.session_state.map_lat = lat
-    st.session_state.map_lon = lon
-    
-    # Interactive Map
+        
+    # --- 1. INTERACTIVE MAP (Render First) ---
     st.caption("Klik pada peta untuk pilih lokasi:")
     with st.expander("🗺️ Peta Lokasi", expanded=True):
         m = folium.Map(location=[st.session_state.map_lat, st.session_state.map_lon], zoom_start=13)
-        m.add_child(folium.LatLngPopup()) # Enable click popup
+        m.add_child(folium.LatLngPopup()) 
         
         folium.Marker(
             [st.session_state.map_lat, st.session_state.map_lon], 
@@ -80,25 +72,29 @@ with st.sidebar:
             icon=folium.Icon(color="blue", icon="cloud")
         ).add_to(m)
         
-        # Capture map clicks
         map_data = st_folium(m, height=200, width=280)
 
-    # Click-to-Pick Logic
+    # Map Click Logic
     if map_data and map_data.get("last_clicked"):
         clicked_lat = map_data["last_clicked"]["lat"]
         clicked_lon = map_data["last_clicked"]["lng"]
         
-        # Check if location changed significantly
+        # If click detected, update state and RERUN immediately
         if abs(clicked_lat - st.session_state.map_lat) > 0.0001 or abs(clicked_lon - st.session_state.map_lon) > 0.0001:
-            # Update MAIN state
             st.session_state.map_lat = clicked_lat
             st.session_state.map_lon = clicked_lon
-            
-            # Update WIDGET state explicitly (Important for st.number_input to refresh)
-            st.session_state.env_lat = clicked_lat
-            st.session_state.env_lon = clicked_lon
-            
             st.rerun()
+
+    # --- 2. INPUT WIDGETS (Render Second) ---
+    # These will use the updated 'map_lat' from session state if map was clicked
+    lat = st.number_input("Latitude", value=st.session_state.map_lat, format="%.4f", key="env_lat")
+    lon = st.number_input("Longitude", value=st.session_state.map_lon, format="%.4f", key="env_lon")
+    
+    # Sync manual input changes back to main state
+    if lat != st.session_state.map_lat or lon != st.session_state.map_lon:
+        st.session_state.map_lat = lat
+        st.session_state.map_lon = lon
+        st.rerun()
 
 # --- WEATHER API FUNCTIONS ---
 def get_current_weather(lat, lon):
