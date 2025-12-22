@@ -385,27 +385,29 @@ with tab2:
         breakdown_data = []
         
         for g in normal_grades:
-            ikat = st.session_state.grading_data[g['key']]
+            ikat = grading_data[g['key']]
             if ikat > 0:
+                price = st.session_state.grade_prices[g['key']]
                 breakdown_data.append({
                     "Grade": g['name'],
                     "Tipe": "Normal",
                     "Ikat": ikat,
                     "Batang": ikat * g['qty'],
-                    "Harga/Ikat": f"Rp {g['price']:,}",
-                    "Subtotal": f"Rp {ikat * g['price']:,}"
+                    "Harga/Btg": f"Rp {price:,}",
+                    "Subtotal": f"Rp {ikat * g['qty'] * price:,}"
                 })
         
         for g in bs_grades:
-            ikat = st.session_state.grading_data[g['key']]
+            ikat = grading_data[g['key']]
             if ikat > 0:
+                price = st.session_state.grade_prices[g['key']]
                 breakdown_data.append({
                     "Grade": g['name'],
                     "Tipe": "BS/Rusak",
                     "Ikat": ikat,
                     "Batang": ikat * g['qty'],
-                    "Harga/Ikat": f"Rp {g['price']:,}",
-                    "Subtotal": f"Rp {ikat * g['price']:,}"
+                    "Harga/Btg": f"Rp {price:,}",
+                    "Subtotal": f"Rp {ikat * g['qty'] * price:,}"
                 })
         
         if breakdown_data:
@@ -413,35 +415,52 @@ with tab2:
         else:
             st.info("Belum ada data grading yang diinput.")
     
-    # Pie chart
+    # Pie chart - Distribusi Grade
     if total_graded > 0:
         st.markdown("### 📊 Distribusi Grade")
         
         labels = []
         values = []
+        revenues = []
         
         for g in normal_grades:
-            stems = st.session_state.grading_data[g['key']] * g['qty']
+            stems = grading_data[g['key']] * g['qty']
             if stems > 0:
                 labels.append(g['name'])
                 values.append(stems)
+                revenues.append(stems * st.session_state.grade_prices[g['key']])
         
         for g in bs_grades:
-            stems = st.session_state.grading_data[g['key']] * g['qty']
+            stems = grading_data[g['key']] * g['qty']
             if stems > 0:
                 labels.append(g['name'])
                 values.append(stems)
+                revenues.append(stems * st.session_state.grade_prices[g['key']])
         
-        fig = go.Figure(data=[go.Pie(
-            labels=labels, 
-            values=values, 
-            hole=0.4,
-            marker_colors=['#10b981', '#059669', '#047857', '#065f46', '#064e3b', 
-                          '#fbbf24', '#f59e0b', '#d97706', '#b45309']
-        )])
+        # Two charts side by side
+        col_chart1, col_chart2 = st.columns(2)
         
-        fig.update_layout(title="Distribusi Batang per Grade", height=400)
-        st.plotly_chart(fig, use_container_width=True)
+        with col_chart1:
+            fig1 = go.Figure(data=[go.Pie(
+                labels=labels, 
+                values=values, 
+                hole=0.4,
+                marker_colors=['#10b981', '#059669', '#047857', '#065f46', '#064e3b', 
+                              '#fbbf24', '#f59e0b', '#d97706', '#b45309']
+            )])
+            fig1.update_layout(title="Distribusi Batang", height=350)
+            st.plotly_chart(fig1, use_container_width=True)
+        
+        with col_chart2:
+            fig2 = go.Figure(data=[go.Pie(
+                labels=labels, 
+                values=revenues, 
+                hole=0.4,
+                marker_colors=['#10b981', '#059669', '#047857', '#065f46', '#064e3b', 
+                              '#fbbf24', '#f59e0b', '#d97706', '#b45309']
+            )])
+            fig2.update_layout(title="Distribusi Pendapatan", height=350)
+            st.plotly_chart(fig2, use_container_width=True)
     
     # ========== ANALISIS HARGA PER BATANG ==========
     st.markdown("---")
