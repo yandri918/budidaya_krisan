@@ -47,9 +47,17 @@ with tab1:
     with col_setup:
         st.markdown("### ⚙️ Konfigurasi Siklus")
         
+        # Get house list from database or use default
+        if 'house_database' in st.session_state and st.session_state.house_database:
+            house_options = [data['name'] for key, data in st.session_state.house_database.items()]
+            st.caption("📊 Data house dari Kalkulator Produksi")
+        else:
+            house_options = ["House 1", "House 2", "House 3", "House 4"]
+            st.caption("⚠️ Konfigurasi house manual (sinkronkan di Kalkulator Produksi)")
+        
         house_name = st.selectbox(
             "🏠 Pilih House",
-            ["House 1", "House 2", "House 3", "House 4"],
+            house_options,
             key="plant_house"
         )
         

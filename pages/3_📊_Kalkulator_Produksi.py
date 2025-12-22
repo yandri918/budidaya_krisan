@@ -68,6 +68,76 @@ tab1, tab2, tab3, tab4 = st.tabs([
 with tab1:
     st.subheader("🌱 Perhitungan Populasi Tanaman")
     
+    # ========== KONFIGURASI HOUSE ==========
+    st.markdown("### 🏠 Konfigurasi House/Greenhouse")
+    
+    # Initialize house database in session state
+    if 'house_database' not in st.session_state:
+        st.session_state.house_database = {}
+    
+    house_config_cols = st.columns([1, 1, 1])
+    
+    with house_config_cols[0]:
+        num_houses = st.number_input(
+            "🏠 Jumlah House",
+            min_value=1, max_value=20, value=4,
+            help="Total greenhouse yang akan dikelola"
+        )
+    
+    with house_config_cols[1]:
+        beds_per_house_config = st.number_input(
+            "📦 Bedengan per House",
+            min_value=4, max_value=50, value=12,
+            help="Jumlah bedengan dalam satu greenhouse"
+        )
+    
+    with house_config_cols[2]:
+        st.metric("📊 Total Bedengan", f"{num_houses * beds_per_house_config}")
+    
+    # House naming
+    with st.expander("✏️ Konfigurasi Nama House", expanded=False):
+        st.info("Beri nama setiap house untuk identifikasi")
+        
+        house_names = {}
+        name_cols = st.columns(min(4, num_houses))
+        
+        for i in range(num_houses):
+            col_idx = i % 4
+            with name_cols[col_idx]:
+                default_name = st.session_state.house_database.get(f"house_{i+1}", {}).get('name', f"House {i+1}")
+                house_names[f"house_{i+1}"] = st.text_input(
+                    f"House {i+1}",
+                    value=default_name,
+                    key=f"house_name_{i+1}"
+                )
+        
+        if st.button("💾 Simpan Konfigurasi House", type="primary"):
+            for i in range(num_houses):
+                key = f"house_{i+1}"
+                st.session_state.house_database[key] = {
+                    'name': house_names[key],
+                    'beds': beds_per_house_config,
+                    'id': i + 1
+                }
+            st.session_state.krisan_data['num_houses'] = num_houses
+            st.session_state.krisan_data['beds_per_house'] = beds_per_house_config
+            st.success(f"✅ {num_houses} house tersimpan ke database!")
+    
+    # Show saved houses
+    if st.session_state.house_database:
+        st.markdown("#### 📋 Database House Tersimpan")
+        house_list = []
+        for key, data in st.session_state.house_database.items():
+            house_list.append({
+                "ID": data.get('id', 0),
+                "Nama House": data.get('name', key),
+                "Bedengan": data.get('beds', 12)
+            })
+        if house_list:
+            st.dataframe(pd.DataFrame(house_list), use_container_width=True, hide_index=True)
+    
+    st.markdown("---")
+    
     col_bed, col_result = st.columns([1.2, 1])
     
     with col_bed:
@@ -87,7 +157,7 @@ with tab1:
         
         num_beds = st.number_input(
             "🔢 Jumlah Bedengan Total", 
-            min_value=1, max_value=100, value=12, step=1,
+            min_value=1, max_value=100, value=num_houses * beds_per_house_config, step=1,
             help="Total bedengan dalam greenhouse"
         )
         
