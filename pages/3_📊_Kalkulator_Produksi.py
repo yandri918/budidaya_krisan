@@ -92,49 +92,107 @@ with tab1:
         )
     
     with house_config_cols[2]:
-        st.metric("📊 Total Bedengan", f"{num_houses * beds_per_house_config}")
+        st.metric("📊 Total Bedengan (default)", f"{num_houses * beds_per_house_config}")
     
-    # House naming
-    with st.expander("✏️ Konfigurasi Nama House", expanded=False):
-        st.info("Beri nama setiap house untuk identifikasi")
+    # House naming and configuration
+    with st.expander("✏️ Konfigurasi Detail per House", expanded=True):
+        st.info("Atur nama, jumlah bedengan, dan proporsi varietas untuk setiap house")
         
-        house_names = {}
-        name_cols = st.columns(min(4, num_houses))
+        house_configs = {}
         
         for i in range(num_houses):
-            col_idx = i % 4
-            with name_cols[col_idx]:
-                default_name = st.session_state.house_database.get(f"house_{i+1}", {}).get('name', f"House {i+1}")
-                house_names[f"house_{i+1}"] = st.text_input(
-                    f"House {i+1}",
-                    value=default_name,
-                    key=f"house_name_{i+1}"
+            st.markdown(f"##### 🏠 House {i+1}")
+            
+            h_cols = st.columns([1.5, 1, 1, 1, 1])
+            
+            # Get existing config or defaults
+            existing = st.session_state.house_database.get(f"house_{i+1}", {})
+            
+            with h_cols[0]:
+                h_name = st.text_input(
+                    "Nama",
+                    value=existing.get('name', f"House {i+1}"),
+                    key=f"h_name_{i+1}"
                 )
+            
+            with h_cols[1]:
+                h_beds = st.number_input(
+                    "Bedengan",
+                    min_value=1, max_value=50,
+                    value=existing.get('beds', beds_per_house_config),
+                    key=f"h_beds_{i+1}"
+                )
+            
+            with h_cols[2]:
+                h_putih = st.number_input(
+                    "🤍 Putih",
+                    min_value=0, max_value=h_beds,
+                    value=min(existing.get('beds_putih', h_beds // 3), h_beds),
+                    key=f"h_putih_{i+1}"
+                )
+            
+            with h_cols[3]:
+                h_pink = st.number_input(
+                    "💗 Pink",
+                    min_value=0, max_value=h_beds,
+                    value=min(existing.get('beds_pink', h_beds // 3), h_beds),
+                    key=f"h_pink_{i+1}"
+                )
+            
+            with h_cols[4]:
+                h_kuning = st.number_input(
+                    "💛 Kuning",
+                    min_value=0, max_value=h_beds,
+                    value=min(existing.get('beds_kuning', h_beds - (h_beds // 3) * 2), h_beds),
+                    key=f"h_kuning_{i+1}"
+                )
+            
+            # Validate total
+            total_var = h_putih + h_pink + h_kuning
+            if total_var != h_beds:
+                st.warning(f"⚠️ Total varietas ({total_var}) ≠ bedengan ({h_beds})")
+            
+            house_configs[f"house_{i+1}"] = {
+                'name': h_name,
+                'beds': h_beds,
+                'beds_putih': h_putih,
+                'beds_pink': h_pink,
+                'beds_kuning': h_kuning,
+                'id': i + 1
+            }
+            
+            st.markdown("---")
         
-        if st.button("💾 Simpan Konfigurasi House", type="primary"):
-            for i in range(num_houses):
-                key = f"house_{i+1}"
-                st.session_state.house_database[key] = {
-                    'name': house_names[key],
-                    'beds': beds_per_house_config,
-                    'id': i + 1
-                }
+        if st.button("💾 Simpan Semua Konfigurasi House", type="primary"):
+            st.session_state.house_database = house_configs
             st.session_state.krisan_data['num_houses'] = num_houses
-            st.session_state.krisan_data['beds_per_house'] = beds_per_house_config
-            st.success(f"✅ {num_houses} house tersimpan ke database!")
+            
+            # Calculate totals
+            total_beds_all = sum(c['beds'] for c in house_configs.values())
+            st.session_state.krisan_data['total_beds_all_houses'] = total_beds_all
+            
+            st.success(f"✅ {num_houses} house tersimpan! Total {total_beds_all} bedengan")
+            st.rerun()
     
-    # Show saved houses
+    # Show saved houses summary
     if st.session_state.house_database:
-        st.markdown("#### 📋 Database House Tersimpan")
+        st.markdown("#### 📋 Ringkasan Konfigurasi House")
         house_list = []
+        total_beds = 0
         for key, data in st.session_state.house_database.items():
+            beds_count = data.get('beds', 12)
+            total_beds += beds_count
             house_list.append({
                 "ID": data.get('id', 0),
                 "Nama House": data.get('name', key),
-                "Bedengan": data.get('beds', 12)
+                "Bedengan": beds_count,
+                "🤍 Putih": data.get('beds_putih', 0),
+                "💗 Pink": data.get('beds_pink', 0),
+                "💛 Kuning": data.get('beds_kuning', 0)
             })
         if house_list:
             st.dataframe(pd.DataFrame(house_list), use_container_width=True, hide_index=True)
+            st.metric("📊 Total Semua Bedengan", f"{total_beds}")
     
     st.markdown("---")
     
