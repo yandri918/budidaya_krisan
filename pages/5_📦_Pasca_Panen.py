@@ -319,6 +319,191 @@ with tab2:
         
         fig.update_layout(title="Distribusi Batang per Grade", height=400)
         st.plotly_chart(fig, use_container_width=True)
+    
+    # ========== ANALISIS HARGA PER BATANG ==========
+    st.markdown("---")
+    st.markdown("### 💵 Analisis Harga Jual vs Biaya Produksi")
+    
+    col_cost, col_expected = st.columns(2)
+    
+    with col_cost:
+        st.markdown("**📊 Input Parameter Biaya**")
+        
+        production_cost_total = st.number_input(
+            "💰 Total Biaya Produksi (Rp/siklus)",
+            min_value=1000000, max_value=500000000, value=30000000, step=1000000,
+            help="Total biaya operasional per siklus (dari tab RAB)"
+        )
+        
+        expected_price_per_stem = st.number_input(
+            "🎯 Harga Ekspektasi Awal (Rp/batang)",
+            min_value=500, max_value=5000, value=1200, step=100,
+            help="Harga jual per batang yang diharapkan sebelum grading"
+        )
+    
+    with col_expected:
+        st.markdown("**🎯 Ekspektasi Awal**")
+        
+        expected_revenue = potential_harvest * expected_price_per_stem
+        expected_profit = expected_revenue - production_cost_total
+        expected_margin = (expected_profit / expected_revenue * 100) if expected_revenue > 0 else 0
+        
+        st.metric("Pendapatan Ekspektasi", f"Rp {expected_revenue:,.0f}")
+        st.metric("Profit Ekspektasi", f"Rp {expected_profit:,.0f}")
+        st.metric("Margin Ekspektasi", f"{expected_margin:.1f}%")
+    
+    # PERBANDINGAN AKTUAL VS EKSPEKTASI
+    st.markdown("---")
+    st.markdown("### 📈 Perbandingan Aktual vs Ekspektasi")
+    
+    # Calculate actual per stem values
+    if total_graded > 0:
+        actual_price_per_stem = total_revenue / total_graded
+        cost_per_stem = production_cost_total / total_graded
+        profit_per_stem = actual_price_per_stem - cost_per_stem
+        margin_per_stem = (profit_per_stem / actual_price_per_stem * 100) if actual_price_per_stem > 0 else 0
+        
+        actual_profit = total_revenue - production_cost_total
+        actual_margin = (actual_profit / total_revenue * 100) if total_revenue > 0 else 0
+        
+        # Variance calculation
+        price_variance = actual_price_per_stem - expected_price_per_stem
+        price_variance_pct = (price_variance / expected_price_per_stem * 100) if expected_price_per_stem > 0 else 0
+        revenue_variance = total_revenue - expected_revenue
+        profit_variance = actual_profit - expected_profit
+        
+        # Display comparison table
+        comparison_data = pd.DataFrame({
+            "Parameter": [
+                "Jumlah Batang",
+                "Harga per Batang",
+                "Total Pendapatan",
+                "Biaya Produksi",
+                "Total Profit",
+                "Margin (%)"
+            ],
+            "Ekspektasi": [
+                f"{potential_harvest:,}",
+                f"Rp {expected_price_per_stem:,.0f}",
+                f"Rp {expected_revenue:,.0f}",
+                f"Rp {production_cost_total:,.0f}",
+                f"Rp {expected_profit:,.0f}",
+                f"{expected_margin:.1f}%"
+            ],
+            "Aktual": [
+                f"{total_graded:,}",
+                f"Rp {actual_price_per_stem:,.0f}",
+                f"Rp {total_revenue:,.0f}",
+                f"Rp {production_cost_total:,.0f}",
+                f"Rp {actual_profit:,.0f}",
+                f"{actual_margin:.1f}%"
+            ],
+            "Selisih": [
+                f"{total_graded - potential_harvest:+,}",
+                f"Rp {price_variance:+,.0f} ({price_variance_pct:+.1f}%)",
+                f"Rp {revenue_variance:+,.0f}",
+                "-",
+                f"Rp {profit_variance:+,.0f}",
+                f"{actual_margin - expected_margin:+.1f}%"
+            ]
+        })
+        
+        st.dataframe(comparison_data, use_container_width=True, hide_index=True)
+        
+        # Visual indicators
+        st.markdown("---")
+        st.markdown("### 📊 Analisis Per Batang")
+        
+        m1, m2, m3, m4 = st.columns(4)
+        
+        with m1:
+            st.metric(
+                "Harga Jual/Batang", 
+                f"Rp {actual_price_per_stem:,.0f}",
+                delta=f"Rp {price_variance:+,.0f} vs ekspektasi",
+                delta_color="normal" if price_variance >= 0 else "inverse"
+            )
+        
+        with m2:
+            st.metric("Biaya/Batang", f"Rp {cost_per_stem:,.0f}")
+        
+        with m3:
+            st.metric(
+                "Profit/Batang", 
+                f"Rp {profit_per_stem:,.0f}",
+                delta_color="normal" if profit_per_stem > 0 else "inverse"
+            )
+        
+        with m4:
+            st.metric(
+                "Margin/Batang", 
+                f"{margin_per_stem:.1f}%",
+                delta_color="normal" if margin_per_stem > 20 else "inverse"
+            )
+        
+        # Summary verdict
+        st.markdown("---")
+        
+        if price_variance >= 0 and profit_variance >= 0:
+            st.success(f"""
+            ✅ **HASIL LEBIH BAIK DARI EKSPEKTASI!**
+            
+            - Harga aktual per batang **lebih tinggi** Rp {price_variance:,.0f} dari ekspektasi
+            - Profit aktual **lebih besar** Rp {profit_variance:,.0f} dari target
+            """)
+        elif price_variance < 0 and profit_variance < 0:
+            st.error(f"""
+            ⚠️ **HASIL DI BAWAH EKSPEKTASI**
+            
+            - Harga aktual per batang **lebih rendah** Rp {abs(price_variance):,.0f} dari ekspektasi
+            - Profit aktual **lebih kecil** Rp {abs(profit_variance):,.0f} dari target
+            
+            **Penyebab potensial:** Proporsi grade BS tinggi, harga pasar turun
+            """)
+        else:
+            st.warning(f"""
+            ⚡ **HASIL BERVARIASI**
+            
+            - Harga per batang: {'lebih tinggi' if price_variance >= 0 else 'lebih rendah'} dari ekspektasi
+            - Total profit: {'tercapai' if profit_variance >= 0 else 'tidak tercapai'}
+            """)
+        
+        # Grade price analysis
+        st.markdown("---")
+        st.markdown("### 📋 Harga per Batang tiap Grade")
+        
+        grade_price_data = []
+        
+        for g in normal_grades:
+            ikat = st.session_state.grading_data[g['key']]
+            if ikat > 0:
+                price_per_stem = g['price'] / g['qty']
+                grade_price_data.append({
+                    "Grade": g['name'],
+                    "Batang/Ikat": g['qty'],
+                    "Harga/Ikat": f"Rp {g['price']:,}",
+                    "Harga/Batang": f"Rp {price_per_stem:,.0f}",
+                    "vs Ekspektasi": f"Rp {price_per_stem - expected_price_per_stem:+,.0f}",
+                    "Status": "✅" if price_per_stem >= expected_price_per_stem else "⚠️"
+                })
+        
+        for g in bs_grades:
+            ikat = st.session_state.grading_data[g['key']]
+            if ikat > 0:
+                price_per_stem = g['price'] / g['qty']
+                grade_price_data.append({
+                    "Grade": g['name'],
+                    "Batang/Ikat": g['qty'],
+                    "Harga/Ikat": f"Rp {g['price']:,}",
+                    "Harga/Batang": f"Rp {price_per_stem:,.0f}",
+                    "vs Ekspektasi": f"Rp {price_per_stem - expected_price_per_stem:+,.0f}",
+                    "Status": "✅" if price_per_stem >= expected_price_per_stem else "⚠️"
+                })
+        
+        if grade_price_data:
+            st.dataframe(pd.DataFrame(grade_price_data), use_container_width=True, hide_index=True)
+    else:
+        st.info("💡 Masukkan data grading di atas untuk melihat analisis perbandingan.")
 
 # TAB 3: Standar Grading
 with tab3:
