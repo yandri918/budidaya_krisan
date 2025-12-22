@@ -1,13 +1,14 @@
-# 📊 Kalkulator Produksi Krisan
-# Estimasi hasil berdasarkan bedengan dan analisis finansial
+# 📊 Kalkulator Budidaya Krisan Spray
+# Populasi, Irigasi, RAB, dan AI Optimasi
 
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
-st.set_page_config(page_title="Kalkulator Produksi", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Kalkulator Budidaya", page_icon="📊", layout="wide")
 
+# CSS Styling
 st.markdown("""
 <style>
     .calc-card {
@@ -17,30 +18,61 @@ st.markdown("""
         padding: 1.5rem;
         margin-bottom: 1rem;
     }
-    .calc-title {
-        color: #065f46;
-        font-weight: 700;
-        font-size: 1.1rem;
-        margin-bottom: 0.5rem;
+    .sync-badge {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        border: 1px solid #93c5fd;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+    }
+    .result-box {
+        background: #f0fdf4;
+        border-left: 4px solid #10b981;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 0.5rem 0;
+    }
+    .warning-box {
+        background: #fef3c7;
+        border-left: 4px solid #f59e0b;
+        padding: 1rem;
+        border-radius: 8px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("## 📊 Kalkulator Produksi Krisan Spray")
-st.info("Hitung jumlah tanaman berdasarkan konfigurasi bedengan, estimasi hasil panen, dan proyeksi keuntungan.")
+st.markdown("## 📊 Kalkulator Budidaya Krisan Spray")
+st.info("Perhitungan lengkap: Populasi, Irigasi, RAB, dan Rekomendasi AI Optimasi")
+
+# ========== INITIALIZE SESSION STATE ==========
+if 'krisan_data' not in st.session_state:
+    st.session_state.krisan_data = {
+        'total_plants': 0,
+        'total_bed_area': 0,
+        'num_beds': 0,
+        'total_stems': 0,
+        'nozzle_count': 0,
+        'irrigation_cost': 0,
+    }
 
 # ========== TABS ==========
-tab1, tab2, tab3 = st.tabs(["🌱 Perhitungan Tanaman", "💰 Analisis Finansial", "📈 Sensitivitas"])
+tab1, tab2, tab3, tab4 = st.tabs([
+    "🌱 Populasi Tanaman", 
+    "💧 Nozzle & Irigasi", 
+    "💰 RAB Lengkap",
+    "🤖 AI Optimasi"
+])
 
+# ==================== TAB 1: POPULASI ====================
 with tab1:
-    st.subheader("🌱 Konfigurasi Bedengan & Perhitungan Populasi")
+    st.subheader("🌱 Perhitungan Populasi Tanaman")
     
     col_bed, col_result = st.columns([1.2, 1])
     
     with col_bed:
-        st.markdown('<div class="calc-card"><div class="calc-title">📐 Konfigurasi Bedengan</div></div>', unsafe_allow_html=True)
+        st.markdown("### 📐 Konfigurasi Bedengan")
         
-        # Bed configuration
         bed_length = st.number_input(
             "📏 Panjang Bedengan (meter)", 
             min_value=5, max_value=100, value=25, step=1,
@@ -55,302 +87,460 @@ with tab1:
         
         num_beds = st.number_input(
             "🔢 Jumlah Bedengan", 
-            min_value=1, max_value=100, value=10, step=1,
+            min_value=1, max_value=100, value=12, step=1,
             help="Total bedengan dalam greenhouse"
         )
         
-        st.markdown("---")
-        st.markdown('<div class="calc-card"><div class="calc-title">🌿 Konfigurasi Tanam</div></div>', unsafe_allow_html=True)
+        st.markdown("### 🌿 Konfigurasi Tanam")
         
         rows_per_bed = st.selectbox(
             "📊 Jumlah Baris per Bedengan",
             options=[6, 7, 8, 9, 10],
-            index=2,  # default 8 baris
-            help="Standar: 8 baris untuk lebar bedengan 100cm (jarak antar baris ~12.5cm)"
+            index=2,
+            help="Standar: 8 baris untuk lebar 100cm"
         )
         
         plant_spacing = st.selectbox(
             "↔️ Jarak Tanam dalam Baris (cm)",
-            options=[10, 12.5, 15],
-            index=1,  # default 12.5 cm
-            format_func=lambda x: f"{x} cm",
-            help="Jarak antar tanaman dalam satu baris"
+            options=[10.0, 12.5, 15.0],
+            index=1,
+            format_func=lambda x: f"{x} cm"
         )
         
-        # Varietas
         variety = st.selectbox(
             "🌸 Varietas",
             ["Krisan Spray Putih", "Krisan Spray Pink", "Krisan Spray Kuning", "Campuran"]
         )
         
-        survival_rate = st.slider(
-            "📊 Survival Rate (%)", 
-            min_value=70, max_value=98, value=85,
-            help="Persentase tanaman yang berhasil hingga panen"
-        )
-        
-        stems_per_plant = st.slider(
-            "🌸 Tangkai per Tanaman",
-            min_value=2.0, max_value=5.0, value=3.5, step=0.5,
-            help="Jumlah tangkai bunga per tanaman (tergantung pinching)"
-        )
+        survival_rate = st.slider("📊 Survival Rate (%)", 70, 98, 85)
+        stems_per_plant = st.slider("🌸 Tangkai/Tanaman", 2.0, 5.0, 3.5, 0.5)
     
     with col_result:
-        st.markdown('<div class="calc-card"><div class="calc-title">📊 Hasil Perhitungan</div></div>', unsafe_allow_html=True)
+        st.markdown("### 📊 Hasil Perhitungan")
         
         # CALCULATIONS
-        # Tanaman per baris = panjang bedengan / jarak tanam
         plants_per_row = int((bed_length * 100) / plant_spacing)
-        
-        # Tanaman per bedengan = tanaman per baris x jumlah baris
         plants_per_bed = plants_per_row * rows_per_bed
-        
-        # Total tanaman = tanaman per bedengan x jumlah bedengan
         total_plants = plants_per_bed * num_beds
-        
-        # Luas efektif bedengan (m²)
-        bed_area_m2 = (bed_length * (bed_width / 100))  # per bedengan
+        bed_area_m2 = (bed_length * (bed_width / 100))
         total_bed_area = bed_area_m2 * num_beds
-        
-        # Densitas aktual
         actual_density = total_plants / total_bed_area if total_bed_area > 0 else 0
-        
-        # Tanaman yang hidup (survival)
         surviving_plants = int(total_plants * (survival_rate / 100))
-        
-        # Total tangkai
         total_stems = int(surviving_plants * stems_per_plant)
         
-        # Display metrics
+        # Update session state
+        st.session_state.krisan_data['total_plants'] = total_plants
+        st.session_state.krisan_data['total_bed_area'] = total_bed_area
+        st.session_state.krisan_data['num_beds'] = num_beds
+        st.session_state.krisan_data['total_stems'] = total_stems
+        st.session_state.krisan_data['surviving_plants'] = surviving_plants
+        st.session_state.krisan_data['bed_length'] = bed_length
+        
+        # Display
         st.metric("🌱 Tanaman per Baris", f"{plants_per_row:,}")
         st.metric("📦 Tanaman per Bedengan", f"{plants_per_bed:,}")
         st.metric("🌿 **TOTAL TANAMAN**", f"{total_plants:,}")
         
         st.markdown("---")
         
-        st.metric("✅ Tanaman Hidup (Panen)", f"{surviving_plants:,}", 
-                  delta=f"Survival {survival_rate}%")
-        st.metric("🌸 **TOTAL TANGKAI BUNGA**", f"{total_stems:,}",
-                  delta=f"{stems_per_plant} tangkai/tanaman")
+        st.metric("✅ Tanaman Hidup", f"{surviving_plants:,}", f"Survival {survival_rate}%")
+        st.metric("🌸 **TOTAL TANGKAI**", f"{total_stems:,}", f"{stems_per_plant} tangkai/tanaman")
         
         st.markdown("---")
         
         st.metric("📐 Luas Bedengan Total", f"{total_bed_area:.1f} m²")
-        st.metric("📊 Densitas Aktual", f"{actual_density:.1f} tanaman/m²")
-        
-        # Save to session state for other tabs
-        st.session_state['total_plants'] = total_plants
-        st.session_state['surviving_plants'] = surviving_plants
-        st.session_state['total_stems'] = total_stems
-        st.session_state['total_bed_area'] = total_bed_area
-        st.session_state['num_beds'] = num_beds
-    
-    # Visual summary
-    st.markdown("---")
-    st.subheader("📋 Ringkasan Konfigurasi")
-    
-    summary_cols = st.columns(5)
-    
-    with summary_cols[0]:
-        st.markdown(f"""
-        **Bedengan:**
-        - Panjang: {bed_length}m
-        - Lebar: {bed_width}cm
-        - Jumlah: {num_beds} unit
-        """)
-    
-    with summary_cols[1]:
-        st.markdown(f"""
-        **Tanam:**
-        - Baris/bedengan: {rows_per_bed}
-        - Jarak tanam: {plant_spacing}cm
-        """)
-    
-    with summary_cols[2]:
-        st.markdown(f"""
-        **Populasi:**
-        - Total: {total_plants:,}
-        - Densitas: {actual_density:.1f}/m²
-        """)
-    
-    with summary_cols[3]:
-        st.markdown(f"""
-        **Panen:**
-        - Survival: {survival_rate}%
-        - Hidup: {surviving_plants:,}
-        """)
-    
-    with summary_cols[4]:
-        st.markdown(f"""
-        **Produksi:**
-        - Tangkai/tanaman: {stems_per_plant}
-        - **Total: {total_stems:,}**
-        """)
+        st.metric("📊 Densitas", f"{actual_density:.1f} tanaman/m²")
 
+# ==================== TAB 2: NOZZLE & IRIGASI ====================
 with tab2:
-    st.subheader("💰 Analisis Finansial")
+    st.subheader("💧 Perhitungan Nozzle & Sistem Irigasi")
     
-    # Get data from session state or use defaults
-    total_plants = st.session_state.get('total_plants', 10000)
-    total_stems = st.session_state.get('total_stems', 25000)
-    total_bed_area = st.session_state.get('total_bed_area', 250)
+    # Sync badge
+    data = st.session_state.krisan_data
+    st.markdown(f"""
+    <div class="sync-badge">
+        📊 <strong>Data Tersinkronisasi:</strong> 
+        🌱 Populasi: <strong>{data.get('total_plants', 0):,}</strong> tanaman | 
+        📐 Luas: <strong>{data.get('total_bed_area', 0):.1f}</strong> m² |
+        📦 Bedengan: <strong>{data.get('num_beds', 0)}</strong> unit
+    </div>
+    """, unsafe_allow_html=True)
     
-    col_cost, col_profit = st.columns([1, 1.2])
+    col_irr, col_res = st.columns([1, 1])
     
-    with col_cost:
-        st.markdown("### 🧮 Input Biaya & Harga")
+    with col_irr:
+        st.markdown("### ⚙️ Konfigurasi Sistem Irigasi")
         
-        selling_price = st.number_input(
-            "💵 Harga Jual (Rp/tangkai)", 
-            min_value=5000, max_value=30000, value=12000, step=500
+        irrigation_type = st.selectbox(
+            "💧 Jenis Irigasi",
+            ["Drip Irrigation", "Sprinkler/Misting", "Manual Selang"]
         )
         
-        cycles_per_year = st.selectbox(
-            "🔄 Siklus per Tahun",
-            options=[2, 3, 4],
-            index=1,
-            help="1 siklus = 105-120 hari"
+        if irrigation_type == "Drip Irrigation":
+            nozzle_spacing = st.selectbox(
+                "↔️ Jarak Antar Dripper (cm)",
+                [15, 20, 25, 30],
+                index=1,
+                help="Jarak dripper dalam selang PE"
+            )
+            lines_per_bed = st.selectbox(
+                "📏 Jumlah Lateral per Bedengan",
+                [2, 3, 4],
+                index=1,
+                help="Jumlah selang PE per bedengan"
+            )
+        elif irrigation_type == "Sprinkler/Misting":
+            nozzle_spacing = st.selectbox(
+                "↔️ Jarak Antar Nozzle (meter)",
+                [1, 1.5, 2, 2.5, 3],
+                index=2
+            )
+            lines_per_bed = 1
+        else:
+            nozzle_spacing = 100
+            lines_per_bed = 1
+        
+        st.markdown("### 💰 Biaya Komponen")
+        
+        price_per_nozzle = st.number_input(
+            "💧 Harga per Nozzle/Dripper (Rp)",
+            500, 10000, 2500, 100
         )
         
-        with st.expander("📋 Detail Biaya Produksi", expanded=True):
-            cost_cutting = st.number_input("Bibit/Stek (Rp/batang)", 200, 1000, 400, step=50)
-            cost_fertilizer = st.number_input("Pupuk (Rp/m² bedengan)", 1000, 5000, 2500, step=100)
-            cost_pesticide = st.number_input("Pestisida (Rp/m² bedengan)", 500, 3000, 1500, step=100)
-            cost_labor_daily = st.number_input("Tenaga Kerja (Rp/hari)", 50000, 150000, 80000, step=5000)
-            labor_days = st.number_input("Hari Kerja per Siklus", 30, 120, 90, step=5)
-            cost_electricity = st.number_input("Listrik/Lampu (Rp/bulan)", 200000, 2000000, 500000, step=50000)
-            cost_other = st.number_input("Biaya Lain-lain (Rp/siklus)", 0, 5000000, 500000, step=100000)
+        price_pe_pipe = st.number_input(
+            "🔧 Harga Pipa PE per meter (Rp)",
+            2000, 20000, 5000, 500
+        )
+        
+        price_mainpipe = st.number_input(
+            "🔧 Harga Pipa Utama PVC per meter (Rp)",
+            10000, 50000, 25000, 1000
+        )
+        
+        mainpipe_length = st.number_input(
+            "📏 Panjang Pipa Utama (meter)",
+            10, 200, 50, 5
+        )
+        
+        price_pump = st.number_input(
+            "⚙️ Harga Pompa (Rp)",
+            500000, 5000000, 1500000, 100000
+        )
+        
+        price_filter = st.number_input(
+            "🔧 Harga Filter & Fitting (Rp)",
+            200000, 2000000, 500000, 50000
+        )
     
-    with col_profit:
-        st.markdown("### 📊 Hasil Analisis")
+    with col_res:
+        st.markdown("### 📊 Hasil Perhitungan Irigasi")
         
-        # Calculate costs
-        cost_cuttings_total = total_plants * cost_cutting
-        cost_fert_total = total_bed_area * cost_fertilizer
-        cost_pest_total = total_bed_area * cost_pesticide
-        cost_labor_total = cost_labor_daily * labor_days
-        cost_elec_total = cost_electricity * 4  # 4 bulan per siklus
+        # Get data from session
+        num_beds = data.get('num_beds', 12)
+        bed_length = data.get('bed_length', 25)
+        total_bed_area = data.get('total_bed_area', 300)
         
-        total_cost_per_cycle = (cost_cuttings_total + cost_fert_total + cost_pest_total + 
-                                cost_labor_total + cost_elec_total + cost_other)
+        # Calculate nozzles
+        if irrigation_type == "Drip Irrigation":
+            nozzles_per_line = int((bed_length * 100) / nozzle_spacing)
+            nozzles_per_bed = nozzles_per_line * lines_per_bed
+            total_nozzles = nozzles_per_bed * num_beds
+            pe_length_per_bed = bed_length * lines_per_bed
+            total_pe_length = pe_length_per_bed * num_beds
+        elif irrigation_type == "Sprinkler/Misting":
+            nozzles_per_bed = int(bed_length / nozzle_spacing) + 1
+            total_nozzles = nozzles_per_bed * num_beds
+            total_pe_length = bed_length * num_beds
+        else:
+            total_nozzles = 0
+            total_pe_length = 0
         
-        # Revenue
-        revenue_per_cycle = total_stems * selling_price
-        profit_per_cycle = revenue_per_cycle - total_cost_per_cycle
-        margin = (profit_per_cycle / revenue_per_cycle * 100) if revenue_per_cycle > 0 else 0
+        # Costs
+        cost_nozzles = total_nozzles * price_per_nozzle
+        cost_pe = total_pe_length * price_pe_pipe
+        cost_mainpipe = mainpipe_length * price_mainpipe
+        total_irrigation_cost = cost_nozzles + cost_pe + cost_mainpipe + price_pump + price_filter
         
-        # Annual
-        revenue_per_year = revenue_per_cycle * cycles_per_year
-        cost_per_year = total_cost_per_cycle * cycles_per_year
-        profit_per_year = profit_per_cycle * cycles_per_year
+        # Update session state
+        st.session_state.krisan_data['nozzle_count'] = total_nozzles
+        st.session_state.krisan_data['irrigation_cost'] = total_irrigation_cost
         
         # Display
-        st.markdown("**Per Siklus (±4 bulan)**")
-        m1, m2 = st.columns(2)
-        with m1:
-            st.metric("Pendapatan", f"Rp {revenue_per_cycle:,.0f}")
-            st.metric("Total Biaya", f"Rp {total_cost_per_cycle:,.0f}")
-        with m2:
-            st.metric("Keuntungan", f"Rp {profit_per_cycle:,.0f}",
-                      delta=f"Margin {margin:.1f}%",
-                      delta_color="normal" if profit_per_cycle > 0 else "inverse")
+        st.metric("💧 Total Nozzle/Dripper", f"{total_nozzles:,}")
+        st.metric("📏 Total Pipa PE", f"{total_pe_length:.0f} meter")
         
         st.markdown("---")
-        st.markdown("**Per Tahun**")
-        m3, m4 = st.columns(2)
-        with m3:
-            st.metric("Pendapatan", f"Rp {revenue_per_year:,.0f}")
-            st.metric("Total Biaya", f"Rp {cost_per_year:,.0f}")
-        with m4:
-            st.metric("**PROFIT TAHUNAN**", f"Rp {profit_per_year:,.0f}",
-                      delta_color="normal" if profit_per_year > 0 else "inverse")
         
-        # BEP
+        st.markdown("**💰 Rincian Biaya Irigasi:**")
+        
+        irr_breakdown = pd.DataFrame({
+            "Komponen": ["Nozzle/Dripper", "Pipa PE", "Pipa Utama PVC", "Pompa", "Filter & Fitting"],
+            "Biaya": [cost_nozzles, cost_pe, cost_mainpipe, price_pump, price_filter]
+        })
+        
+        for _, row in irr_breakdown.iterrows():
+            st.markdown(f"- {row['Komponen']}: **Rp {row['Biaya']:,.0f}**")
+        
         st.markdown("---")
-        st.markdown("**Break Even Point**")
-        bep_units = total_cost_per_cycle / selling_price if selling_price > 0 else 0
-        bep_pct = (bep_units / total_stems * 100) if total_stems > 0 else 0
+        st.metric("💰 **TOTAL BIAYA IRIGASI**", f"Rp {total_irrigation_cost:,.0f}")
         
-        if total_stems > bep_units:
-            st.success(f"✅ BEP: {bep_units:,.0f} tangkai ({bep_pct:.1f}%) — Surplus {total_stems - bep_units:,.0f} tangkai")
-        else:
-            st.error(f"❌ BEP tidak tercapai. Kurang {bep_units - total_stems:,.0f} tangkai")
-    
-    # Cost breakdown chart
-    st.markdown("---")
-    st.subheader("📊 Breakdown Biaya Produksi")
-    
-    cost_data = {
-        "Kategori": ["Bibit/Stek", "Pupuk", "Pestisida", "Tenaga Kerja", "Listrik", "Lainnya"],
-        "Biaya (Rp)": [cost_cuttings_total, cost_fert_total, cost_pest_total, 
-                      cost_labor_total, cost_elec_total, cost_other]
-    }
-    
-    df_cost = pd.DataFrame(cost_data)
-    
-    fig = go.Figure(data=[
-        go.Pie(
-            labels=df_cost["Kategori"],
-            values=df_cost["Biaya (Rp)"],
-            hole=0.4,
-            marker_colors=['#10b981', '#059669', '#047857', '#065f46', '#064e3b', '#9ca3af']
-        )
-    ])
-    
-    fig.update_layout(title="Distribusi Biaya Produksi per Siklus", height=400)
-    st.plotly_chart(fig, use_container_width=True)
+        cost_per_m2 = total_irrigation_cost / total_bed_area if total_bed_area > 0 else 0
+        st.caption(f"Biaya per m²: Rp {cost_per_m2:,.0f}")
 
+# ==================== TAB 3: RAB LENGKAP ====================
 with tab3:
-    st.subheader("📈 Analisis Sensitivitas")
+    st.subheader("💰 Rencana Anggaran Biaya (RAB) Lengkap")
     
-    total_stems = st.session_state.get('total_stems', 25000)
+    # Sync badge
+    data = st.session_state.krisan_data
+    st.markdown(f"""
+    <div class="sync-badge">
+        📊 <strong>Data Tersinkronisasi dari Tab Lain:</strong><br>
+        🌱 Populasi: <strong>{data.get('total_plants', 0):,}</strong> tanaman | 
+        Luas: <strong>{data.get('total_bed_area', 0):.1f}</strong> m²<br>
+        💧 Irigasi: <strong>{data.get('nozzle_count', 0):,}</strong> nozzle | 
+        Biaya Instalasi: <strong>Rp {data.get('irrigation_cost', 0):,.0f}</strong>
+    </div>
+    """, unsafe_allow_html=True)
     
-    st.markdown("### 🎯 Sensitivitas Harga Jual")
+    col_rab1, col_rab2 = st.columns([1, 1])
     
-    base_price = st.slider("Harga Dasar (Rp/tangkai)", 8000, 20000, 12000, 1000)
-    base_cost = st.number_input("Estimasi Biaya per Siklus (Rp)", 10000000, 100000000, 30000000, 1000000)
+    with col_rab1:
+        st.markdown("### 🏗️ A. Investasi Awal (Modal Tetap)")
+        
+        with st.expander("📐 Konstruksi Greenhouse", expanded=True):
+            greenhouse_area = st.number_input("Luas Greenhouse (m²)", 100, 5000, 400, 50)
+            cost_gh_per_m2 = st.number_input("Biaya per m² (Rp)", 100000, 500000, 250000, 10000)
+            cost_greenhouse = greenhouse_area * cost_gh_per_m2
+            st.metric("Subtotal Greenhouse", f"Rp {cost_greenhouse:,.0f}")
+        
+        with st.expander("💧 Sistem Irigasi (dari Tab 2)"):
+            irrigation_cost = data.get('irrigation_cost', 7500000)
+            st.metric("Subtotal Irigasi", f"Rp {irrigation_cost:,.0f}")
+        
+        with st.expander("💡 Sistem Lampu (Photoperiod)"):
+            num_lamps = st.number_input("Jumlah Lampu", 10, 200, 50, 5)
+            cost_per_lamp = st.number_input("Harga per Lampu (Rp)", 50000, 500000, 150000, 10000)
+            cost_installation = st.number_input("Biaya Instalasi Listrik (Rp)", 500000, 5000000, 2000000, 100000)
+            cost_lighting = (num_lamps * cost_per_lamp) + cost_installation
+            st.metric("Subtotal Lampu", f"Rp {cost_lighting:,.0f}")
+        
+        with st.expander("🌑 Plastik Hitam (Shading)"):
+            shading_area = st.number_input("Luas Shading (m²)", 100, 5000, int(data.get('total_bed_area', 300)), 50)
+            cost_shading_per_m2 = st.number_input("Harga Plastik per m² (Rp)", 5000, 30000, 15000, 1000)
+            cost_shading = shading_area * cost_shading_per_m2
+            st.metric("Subtotal Shading", f"Rp {cost_shading:,.0f}")
+        
+        with st.expander("🔧 Peralatan Lain"):
+            cost_tools = st.number_input("Peralatan (gunting, ember, dll)", 1000000, 10000000, 3000000, 500000)
+            st.metric("Subtotal Peralatan", f"Rp {cost_tools:,.0f}")
+        
+        total_investment = cost_greenhouse + irrigation_cost + cost_lighting + cost_shading + cost_tools
+        
+        st.markdown("---")
+        st.metric("💼 **TOTAL INVESTASI AWAL**", f"Rp {total_investment:,.0f}")
     
-    price_scenarios = [base_price * 0.7, base_price * 0.85, base_price, 
-                       base_price * 1.15, base_price * 1.3]
-    profits = [(total_stems * p) - base_cost for p in price_scenarios]
+    with col_rab2:
+        st.markdown("### 💵 B. Biaya Operasional (per Siklus)")
+        
+        total_plants = data.get('total_plants', 20000)
+        total_bed_area = data.get('total_bed_area', 300)
+        
+        with st.expander("🌱 Bibit/Stek", expanded=True):
+            cost_cutting = st.number_input("Harga per Stek (Rp)", 200, 1000, 400, 50)
+            cost_cuttings_total = total_plants * cost_cutting
+            st.metric("Subtotal Bibit", f"Rp {cost_cuttings_total:,.0f}", f"{total_plants:,} stek")
+        
+        with st.expander("🧪 Pupuk"):
+            cost_fertilizer_m2 = st.number_input("Biaya Pupuk per m² (Rp)", 1000, 10000, 3000, 200)
+            cost_fertilizer = total_bed_area * cost_fertilizer_m2
+            st.metric("Subtotal Pupuk", f"Rp {cost_fertilizer:,.0f}")
+        
+        with st.expander("🛡️ Pestisida"):
+            cost_pesticide_m2 = st.number_input("Biaya Pestisida per m² (Rp)", 500, 5000, 2000, 200)
+            cost_pesticide = total_bed_area * cost_pesticide_m2
+            st.metric("Subtotal Pestisida", f"Rp {cost_pesticide:,.0f}")
+        
+        with st.expander("👷 Tenaga Kerja"):
+            labor_daily = st.number_input("Upah Harian (Rp)", 50000, 150000, 80000, 5000)
+            labor_days = st.number_input("Hari Kerja per Siklus", 60, 120, 90, 5)
+            cost_labor = labor_daily * labor_days
+            st.metric("Subtotal Tenaga Kerja", f"Rp {cost_labor:,.0f}")
+        
+        with st.expander("⚡ Listrik"):
+            cost_electricity = st.number_input("Biaya Listrik per Bulan (Rp)", 200000, 2000000, 600000, 50000)
+            months_per_cycle = 4
+            cost_electricity_total = cost_electricity * months_per_cycle
+            st.metric("Subtotal Listrik", f"Rp {cost_electricity_total:,.0f}", f"{months_per_cycle} bulan")
+        
+        with st.expander("📦 Lain-lain"):
+            cost_other = st.number_input("Biaya Lain-lain (Rp)", 0, 5000000, 500000, 100000)
+            st.metric("Subtotal Lainnya", f"Rp {cost_other:,.0f}")
+        
+        total_operational = cost_cuttings_total + cost_fertilizer + cost_pesticide + cost_labor + cost_electricity_total + cost_other
+        
+        st.markdown("---")
+        st.metric("💵 **TOTAL OPERASIONAL/SIKLUS**", f"Rp {total_operational:,.0f}")
     
-    fig_sens = go.Figure()
+    # SUMMARY
+    st.markdown("---")
+    st.subheader("📊 Ringkasan RAB & Proyeksi Keuntungan")
     
-    fig_sens.add_trace(go.Bar(
-        x=[f"Rp {int(p):,}" for p in price_scenarios],
-        y=profits,
-        marker_color=['#ef4444' if p < 0 else '#10b981' for p in profits],
-        text=[f"Rp {p/1000000:.1f} jt" for p in profits],
-        textposition='outside'
-    ))
+    col_sum1, col_sum2, col_sum3 = st.columns(3)
     
-    fig_sens.update_layout(
-        title="Keuntungan vs Harga Jual",
-        xaxis_title="Harga Jual per Tangkai",
-        yaxis_title="Keuntungan (Rp)",
-        height=400
-    )
+    total_stems = data.get('total_stems', 50000)
     
-    st.plotly_chart(fig_sens, use_container_width=True)
+    with col_sum1:
+        st.markdown("**📥 Pendapatan**")
+        selling_price = st.number_input("Harga Jual (Rp/tangkai)", 5000, 25000, 12000, 500)
+        cycles_per_year = st.selectbox("Siklus/Tahun", [2, 3], index=1)
+        
+        revenue_cycle = total_stems * selling_price
+        revenue_year = revenue_cycle * cycles_per_year
+        
+        st.metric("Pendapatan/Siklus", f"Rp {revenue_cycle:,.0f}")
+        st.metric("Pendapatan/Tahun", f"Rp {revenue_year:,.0f}")
     
-    # Sensitivity table
-    st.markdown("### 📋 Tabel Sensitivitas")
+    with col_sum2:
+        st.markdown("**📤 Total Biaya**")
+        operational_year = total_operational * cycles_per_year
+        
+        st.metric("Operasional/Siklus", f"Rp {total_operational:,.0f}")
+        st.metric("Operasional/Tahun", f"Rp {operational_year:,.0f}")
+        st.metric("Investasi Awal", f"Rp {total_investment:,.0f}")
     
-    sens_data = []
-    for p in price_scenarios:
-        revenue = total_stems * p
-        profit = revenue - base_cost
-        margin = (profit / revenue * 100) if revenue > 0 else 0
-        sens_data.append({
-            "Harga (Rp)": f"{int(p):,}",
-            "Pendapatan": f"Rp {revenue:,.0f}",
-            "Profit": f"Rp {profit:,.0f}",
-            "Margin": f"{margin:.1f}%",
-            "Status": "✅ Untung" if profit > 0 else "❌ Rugi"
+    with col_sum3:
+        st.markdown("**💰 Profit & ROI**")
+        profit_cycle = revenue_cycle - total_operational
+        profit_year = profit_cycle * cycles_per_year
+        roi = (profit_year / total_investment * 100) if total_investment > 0 else 0
+        payback = (total_investment / profit_year) if profit_year > 0 else 999
+        
+        st.metric("Profit/Siklus", f"Rp {profit_cycle:,.0f}",
+                  delta_color="normal" if profit_cycle > 0 else "inverse")
+        st.metric("Profit/Tahun", f"Rp {profit_year:,.0f}",
+                  delta_color="normal" if profit_year > 0 else "inverse")
+        st.metric("ROI", f"{roi:.1f}%/tahun")
+        st.metric("Payback Period", f"{payback:.1f} tahun")
+
+# ==================== TAB 4: AI OPTIMASI ====================
+with tab4:
+    st.subheader("🤖 AI Optimasi & Rekomendasi")
+    
+    data = st.session_state.krisan_data
+    
+    st.markdown(f"""
+    <div class="sync-badge">
+        📊 <strong>Analisis berdasarkan data Anda:</strong><br>
+        🌱 {data.get('total_plants', 0):,} tanaman | 
+        🌸 {data.get('total_stems', 0):,} tangkai | 
+        📐 {data.get('total_bed_area', 0):.1f} m²
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # AI Analysis
+    total_plants = data.get('total_plants', 20000)
+    total_stems = data.get('total_stems', 50000)
+    total_bed_area = data.get('total_bed_area', 300)
+    nozzle_count = data.get('nozzle_count', 1000)
+    
+    density = total_plants / total_bed_area if total_bed_area > 0 else 0
+    
+    st.markdown("### 🎯 Analisis & Rekomendasi")
+    
+    recommendations = []
+    
+    # Density analysis
+    if density < 50:
+        recommendations.append({
+            "type": "warning",
+            "title": "📊 Densitas Rendah",
+            "desc": f"Densitas {density:.1f}/m² di bawah optimal (64/m²). Pertimbangkan mengurangi jarak tanam untuk meningkatkan produktivitas."
+        })
+    elif density > 80:
+        recommendations.append({
+            "type": "warning", 
+            "title": "📊 Densitas Terlalu Tinggi",
+            "desc": f"Densitas {density:.1f}/m² terlalu padat. Risiko: sirkulasi udara buruk, penyakit mudah menyebar. Kurangi baris atau tambah jarak tanam."
+        })
+    else:
+        recommendations.append({
+            "type": "success",
+            "title": "✅ Densitas Optimal",
+            "desc": f"Densitas {density:.1f}/m² sudah dalam range optimal (50-80/m²)."
         })
     
-    st.dataframe(pd.DataFrame(sens_data), use_container_width=True, hide_index=True)
+    # Irrigation analysis
+    plants_per_nozzle = total_plants / nozzle_count if nozzle_count > 0 else 0
+    if plants_per_nozzle > 25:
+        recommendations.append({
+            "type": "warning",
+            "title": "💧 Nozzle Kurang",
+            "desc": f"Ratio {plants_per_nozzle:.0f} tanaman/nozzle terlalu tinggi. Tambahkan nozzle untuk distribusi air merata."
+        })
+    elif nozzle_count > 0:
+        recommendations.append({
+            "type": "success",
+            "title": "✅ Irigasi Memadai",
+            "desc": f"Ratio {plants_per_nozzle:.0f} tanaman/nozzle sudah baik."
+        })
+    
+    # Production optimization
+    recommendations.append({
+        "type": "info",
+        "title": "💡 Tips Meningkatkan Produksi",
+        "desc": """
+        - Pinching yang tepat bisa meningkatkan tangkai/tanaman dari 3.5 ke 4-5
+        - Photoperiod ketat (14 jam gelap) untuk pembungaan optimal
+        - Suhu malam 15-18°C untuk warna bunga lebih intens
+        """
+    })
+    
+    # Market timing
+    recommendations.append({
+        "type": "info",
+        "title": "📅 Timing Pasar",
+        "desc": """
+        **Peak Demand:** Valentine (Feb), Imlek (Jan-Feb), Mother's Day (Mei)
+        **Strategi:** Tanam mundur 105 hari dari peak untuk panen tepat waktu.
+        """
+    })
+    
+    # Display recommendations
+    for rec in recommendations:
+        if rec["type"] == "success":
+            st.success(f"**{rec['title']}**\n\n{rec['desc']}")
+        elif rec["type"] == "warning":
+            st.warning(f"**{rec['title']}**\n\n{rec['desc']}")
+        else:
+            st.info(f"**{rec['title']}**\n\n{rec['desc']}")
+    
+    # Profit optimization scenarios
+    st.markdown("---")
+    st.markdown("### 📈 Skenario Optimasi Profit")
+    
+    scenarios = pd.DataFrame({
+        "Skenario": ["Kondisi Saat Ini", "Optimasi Densitas", "Tingkatkan Survival", "Premium Market"],
+        "Tanaman": [total_plants, int(total_plants * 1.2), total_plants, total_plants],
+        "Survival": [85, 85, 92, 85],
+        "Harga": [12000, 12000, 12000, 18000],
+        "Tangkai/Tanaman": [3.5, 3.5, 3.5, 3.5]
+    })
+    
+    scenarios["Tangkai"] = (scenarios["Tanaman"] * scenarios["Survival"] / 100 * scenarios["Tangkai/Tanaman"]).astype(int)
+    scenarios["Pendapatan"] = scenarios["Tangkai"] * scenarios["Harga"]
+    scenarios["Pendapatan (Rp)"] = scenarios["Pendapatan"].apply(lambda x: f"Rp {x:,.0f}")
+    
+    # Calculate potential increase
+    base_revenue = scenarios.iloc[0]["Pendapatan"]
+    scenarios["Peningkatan"] = ((scenarios["Pendapatan"] - base_revenue) / base_revenue * 100).apply(lambda x: f"+{x:.1f}%" if x > 0 else "-")
+    
+    st.dataframe(
+        scenarios[["Skenario", "Tanaman", "Survival", "Harga", "Tangkai", "Pendapatan (Rp)", "Peningkatan"]],
+        use_container_width=True,
+        hide_index=True
+    )
 
 # Footer
 st.markdown("---")
-st.caption("🌸 Budidaya Krisan Pro - Kalkulator Produksi")
+st.caption("🌸 Budidaya Krisan Pro - Kalkulator Lengkap dengan Sinkronisasi Data")
