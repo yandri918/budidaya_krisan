@@ -530,8 +530,10 @@ with tab2:
             # Initialize harvest history if not exists
             if 'harvest_history' not in st.session_state:
                 st.session_state.harvest_history = []
+            if 'harvest_details' not in st.session_state:
+                st.session_state.harvest_details = []
             
-            # Create entry from grading data
+            # 1. Save Summary
             new_entry = {
                 "Tanggal": report_date.strftime("%Y-%m-%d"),
                 "House": house_name,
@@ -542,8 +544,64 @@ with tab2:
                 "Pink": totals_pink['stems'],
                 "Kuning": totals_kuning['stems']
             }
-            
             st.session_state.harvest_history.append(new_entry)
+            
+            # 2. Save Granular Details (Dataset)
+            current_date = report_date.strftime("%Y-%m-%d")
+            
+            # Helper to record item lines
+            def record_variety_details(var_name, var_key, var_data):
+                # Normal grades
+                for g in normal_grades:
+                    ikat = var_data.get(g['key'], 0)
+                    if ikat > 0:
+                        qty = ikat * g['qty']
+                        price_per_ikat = st.session_state.grade_prices.get(g['key'], 0) * g['qty']
+                        revenue = ikat * price_per_ikat
+                        
+                        st.session_state.harvest_details.append({
+                            "Tanggal": current_date,
+                            "House": house_name,
+                            "Varietas": var_name,
+                            "Grade": g['name'],
+                            "Tipe": "Normal",
+                            "Ukuran": "90cm",
+                            "Jml_Ikat": ikat,
+                            "Isi_per_Ikat": g['qty'],
+                            "Total_Batang": qty,
+                            "Harga_per_Ikat": price_per_ikat,
+                            "Harga_per_Batang": st.session_state.grade_prices.get(g['key'], 0),
+                            "Total_Pendapatan": revenue
+                        })
+                
+                # BS grades
+                for g in bs_grades:
+                    ikat = var_data.get(g['key'], 0)
+                    if ikat > 0:
+                        qty = ikat * g['qty']
+                        price_per_ikat = st.session_state.grade_prices.get(g['key'], 0) * g['qty']
+                        revenue = ikat * price_per_ikat
+                        
+                        st.session_state.harvest_details.append({
+                            "Tanggal": current_date,
+                            "House": house_name,
+                            "Varietas": var_name,
+                            "Grade": g['name'],
+                            "Tipe": "BS/Rusak",
+                            "Ukuran": f"{g.get('length', 'Unknown')}cm",
+                            "Jml_Ikat": ikat,
+                            "Isi_per_Ikat": g['qty'],
+                            "Total_Batang": qty,
+                            "Harga_per_Ikat": price_per_ikat,
+                            "Harga_per_Batang": st.session_state.grade_prices.get(g['key'], 0),
+                            "Total_Pendapatan": revenue
+                        })
+
+            # Record for each variety
+            record_variety_details("Putih", "putih", st.session_state.grading_data_variety['putih'])
+            record_variety_details("Pink", "pink", st.session_state.grading_data_variety['pink'])
+            record_variety_details("Kuning", "kuning", st.session_state.grading_data_variety['kuning'])
+            
             st.success(f"✅ Data grading {house_name} tanggal {report_date.strftime('%d/%m/%Y')} tersimpan ke Riwayat Panen!")
             st.balloons()
     
@@ -1156,11 +1214,26 @@ with tab7:
             
             csv_history = history_df.to_csv(index=False).encode('utf-8')
             st.download_button(
-                "🌾 Download Riwayat Panen (CSV)",
+                "🌾 Download Riwayat Panen (Summary CSV)",
                 data=csv_history,
                 file_name=f"riwayat_panen_{datetime.now().strftime('%Y%m%d')}.csv",
                 mime="text/csv",
                 use_container_width=True
+            )
+        
+        # Export granular details
+        if 'harvest_details' in st.session_state and st.session_state.harvest_details:
+            details_df = pd.DataFrame(st.session_state.harvest_details)
+            
+            csv_details = details_df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                "📈 Download Dataset Detail (Granular CSV)",
+                data=csv_details,
+                file_name=f"dataset_panen_lengkap_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv",
+                use_container_width=True,
+                type="primary",
+                help="Download data rinci: Tanggal, House, Varietas, Grade, Ukuran, Jumlah, Harga"
             )
     
     with col_history:
@@ -1250,6 +1323,7 @@ with tab7:
             # Clear button
             if st.button("🗑️ Hapus Semua Riwayat", key="clear_history"):
                 st.session_state.harvest_history = []
+                st.session_state.harvest_details = []
                 st.rerun()
         else:
             st.info("📊 Belum ada riwayat panen. Tambahkan data melalui form di atas.")
