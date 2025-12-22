@@ -514,10 +514,10 @@ with tab5:
     with col_calc1:
         st.markdown("### ⚙️ Parameter Siklus")
         
-        calc_veg = st.number_input("🌱 Fase Vegetatif (hari)", 21, 50, 35, key="calc_veg")
-        calc_gen = st.number_input("🌸 Fase Generatif (hari)", 42, 70, 56, key="calc_gen")
-        calc_harvest = st.number_input("🌾 Periode Panen (hari)", 7, 14, 10, key="calc_harv")
-        calc_jeda = st.number_input("🚜 Jeda Lahan (hari)", 10, 21, 14, key="calc_jeda")
+        calc_veg = st.number_input("🌱 Fase Vegetatif (hari)", 21, 50, 30, key="calc_veg", help="~4 minggu")
+        calc_gen = st.number_input("🌸 Fase Generatif (hari)", 35, 70, 42, key="calc_gen", help="~6 minggu")
+        calc_harvest = st.number_input("🌾 Periode Panen (hari)", 5, 14, 7, key="calc_harv")
+        calc_jeda = st.number_input("🚜 Jeda Lahan (hari)", 10, 21, 12, key="calc_jeda")
         
         st.markdown("---")
         
