@@ -86,10 +86,30 @@ with tab1:
         )
         
         num_beds = st.number_input(
-            "🔢 Jumlah Bedengan", 
+            "🔢 Jumlah Bedengan Total", 
             min_value=1, max_value=100, value=12, step=1,
             help="Total bedengan dalam greenhouse"
         )
+        
+        # ========== PROPORSI BEDENGAN PER VARIETAS ==========
+        st.markdown("### 🌸 Proporsi Bedengan per Varietas")
+        st.caption("Tentukan pembagian bedengan untuk setiap warna krisan")
+        
+        var_cols = st.columns(3)
+        
+        with var_cols[0]:
+            beds_putih = st.number_input("🤍 Bedengan Putih", 0, num_beds, 4, key="calc_beds_putih")
+        with var_cols[1]:
+            beds_pink = st.number_input("💗 Bedengan Pink", 0, num_beds, 4, key="calc_beds_pink")
+        with var_cols[2]:
+            beds_kuning = st.number_input("💛 Bedengan Kuning", 0, num_beds, 4, key="calc_beds_kuning")
+        
+        total_assigned = beds_putih + beds_pink + beds_kuning
+        
+        if total_assigned != num_beds:
+            st.warning(f"⚠️ Total bedengan varietas ({total_assigned}) tidak sama dengan total bedengan ({num_beds})")
+        else:
+            st.success(f"✅ Semua {num_beds} bedengan sudah dialokasikan")
         
         st.markdown("### 🌿 Konfigurasi Tanam")
         
@@ -105,11 +125,6 @@ with tab1:
             options=[10.0, 12.5, 15.0],
             index=1,
             format_func=lambda x: f"{x} cm"
-        )
-        
-        variety = st.selectbox(
-            "🌸 Varietas",
-            ["Krisan Spray Putih", "Krisan Spray Pink", "Krisan Spray Kuning", "Campuran"]
         )
         
         survival_rate = st.slider("📊 Survival Rate (%)", 70, 98, 85)
@@ -135,6 +150,15 @@ with tab1:
         st.session_state.krisan_data['total_stems'] = total_stems
         st.session_state.krisan_data['surviving_plants'] = surviving_plants
         st.session_state.krisan_data['bed_length'] = bed_length
+        st.session_state.krisan_data['plants_per_bed'] = plants_per_bed
+        
+        # Variety data for sync with Pasca Panen
+        st.session_state.krisan_data['beds_putih'] = beds_putih
+        st.session_state.krisan_data['beds_pink'] = beds_pink
+        st.session_state.krisan_data['beds_kuning'] = beds_kuning
+        st.session_state.krisan_data['plants_putih'] = beds_putih * plants_per_bed
+        st.session_state.krisan_data['plants_pink'] = beds_pink * plants_per_bed
+        st.session_state.krisan_data['plants_kuning'] = beds_kuning * plants_per_bed
         
         # Display
         st.metric("🌱 Tanaman per Baris", f"{plants_per_row:,}")

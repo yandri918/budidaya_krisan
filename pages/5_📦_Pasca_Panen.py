@@ -99,26 +99,54 @@ with tab1:
 with tab2:
     st.subheader("📊 Input Hasil Grading Aktual")
     
-    # ========== PROPORSI BEDENGAN PER VARIETAS ==========
-    st.markdown("### 🌸 Proporsi Bedengan per Varietas")
-    st.caption("Tentukan jumlah bedengan untuk setiap varietas krisan")
+    # ========== SYNC DATA DARI KALKULATOR PRODUKSI ==========
+    # Check if synced data exists
+    has_synced_data = 'krisan_data' in st.session_state and st.session_state.krisan_data.get('beds_putih', 0) > 0
     
-    col_bed1, col_bed2, col_bed3, col_bed_total = st.columns([1, 1, 1, 1])
+    if has_synced_data:
+        data = st.session_state.krisan_data
+        st.markdown(f"""
+        <div class="sync-badge">
+            📊 <strong>Data Tersinkronisasi dari Kalkulator Produksi:</strong><br>
+            🤍 Putih: <strong>{data.get('beds_putih', 0)}</strong> bedengan ({data.get('plants_putih', 0):,} tanaman) |
+            💗 Pink: <strong>{data.get('beds_pink', 0)}</strong> bedengan ({data.get('plants_pink', 0):,} tanaman) |
+            💛 Kuning: <strong>{data.get('beds_kuning', 0)}</strong> bedengan ({data.get('plants_kuning', 0):,} tanaman)
+        </div>
+        """, unsafe_allow_html=True)
+        
+        use_synced = st.checkbox("✅ Gunakan data dari Kalkulator Produksi", value=True)
+        
+        if use_synced:
+            beds_putih = data.get('beds_putih', 4)
+            beds_pink = data.get('beds_pink', 4)
+            beds_kuning = data.get('beds_kuning', 4)
+            plants_per_bed = data.get('plants_per_bed', 1400)
+        else:
+            st.markdown("### 🌸 Input Manual Proporsi Bedengan")
+            col_bed1, col_bed2, col_bed3 = st.columns(3)
+            with col_bed1:
+                beds_putih = st.number_input("🤍 Bedengan Putih", 0, 50, 4, key="manual_beds_putih")
+            with col_bed2:
+                beds_pink = st.number_input("💗 Bedengan Pink", 0, 50, 4, key="manual_beds_pink")
+            with col_bed3:
+                beds_kuning = st.number_input("💛 Bedengan Kuning", 0, 50, 4, key="manual_beds_kuning")
+            plants_per_bed = st.number_input("🌱 Tanaman per Bedengan", 500, 3000, 1400, step=100)
+    else:
+        st.info("💡 Untuk sinkronisasi otomatis, isi data di **Kalkulator Produksi** → Tab Populasi Tanaman terlebih dahulu.")
+        
+        st.markdown("### 🌸 Proporsi Bedengan per Varietas")
+        col_bed1, col_bed2, col_bed3 = st.columns(3)
+        with col_bed1:
+            beds_putih = st.number_input("🤍 Bedengan Putih", 0, 50, 4, key="beds_putih")
+        with col_bed2:
+            beds_pink = st.number_input("💗 Bedengan Pink", 0, 50, 4, key="beds_pink")
+        with col_bed3:
+            beds_kuning = st.number_input("💛 Bedengan Kuning", 0, 50, 4, key="beds_kuning")
+        plants_per_bed = st.number_input("🌱 Tanaman per Bedengan", 500, 3000, 1400, step=100,
+                                         help="Berdasarkan panjang × baris × jarak tanam")
     
-    with col_bed1:
-        beds_putih = st.number_input("🤍 Bedengan Putih", 0, 50, 4, key="beds_putih")
-    with col_bed2:
-        beds_pink = st.number_input("💗 Bedengan Pink", 0, 50, 4, key="beds_pink")
-    with col_bed3:
-        beds_kuning = st.number_input("💛 Bedengan Kuning", 0, 50, 4, key="beds_kuning")
-    with col_bed_total:
-        total_beds = beds_putih + beds_pink + beds_kuning
-        st.metric("📦 Total Bedengan", total_beds)
-    
-    # Calculate plants per variety (assuming same density)
-    plants_per_bed = st.number_input("🌱 Tanaman per Bedengan", 500, 3000, 1400, step=100,
-                                     help="Berdasarkan panjang × baris × jarak tanam")
-    
+    # Calculate plants per variety
+    total_beds = beds_putih + beds_pink + beds_kuning
     plants_putih = beds_putih * plants_per_bed
     plants_pink = beds_pink * plants_per_bed
     plants_kuning = beds_kuning * plants_per_bed
