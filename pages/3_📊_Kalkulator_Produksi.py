@@ -74,11 +74,12 @@ if 'krisan_data' not in st.session_state:
     }
 
 # ========== TABS ==========
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🌱 Populasi Tanaman", 
     "💧 Nozzle & Irigasi", 
     "💰 RAB Lengkap",
-    "🤖 AI Optimasi"
+    "🤖 AI Optimasi",
+    "📈 Analisis Tahunan"
 ])
 
 # ==================== TAB 1: POPULASI ====================
@@ -777,6 +778,193 @@ with tab4:
         use_container_width=True,
         hide_index=True
     )
+
+# ==================== TAB 5: ANALISIS TAHUNAN ====================
+with tab5:
+    st.subheader("📈 Analisis Usaha Tahunan - Semua House")
+    st.info("Proyeksi produksi dan pendapatan 1 tahun berdasarkan konfigurasi house")
+    
+    # Get house data from database or use defaults
+    if 'house_database' in st.session_state and st.session_state.house_database:
+        houses = st.session_state.house_database
+        num_houses = len(houses)
+        st.success(f"📊 Data dari {num_houses} house tersinkronisasi")
+    else:
+        # Use defaults
+        num_houses = 4
+        houses = {}
+        for i in range(num_houses):
+            houses[f"house_{i+1}"] = {
+                'name': f"House {i+1}",
+                'beds': DEFAULT_CONFIG['beds_per_house'],
+                'bed_length': DEFAULT_CONFIG['bed_length'],
+                'rows_per_bed': DEFAULT_CONFIG['rows_per_bed'],
+                'plant_spacing': DEFAULT_CONFIG['plant_spacing'],
+                'total_plants': DEFAULT_PLANTS_PER_BED * DEFAULT_CONFIG['beds_per_house'],
+                'beds_putih': 4, 'beds_pink': 4, 'beds_kuning': 4
+            }
+        st.warning("⚠️ Menggunakan default. Simpan konfigurasi di Tab Populasi untuk data akurat.")
+    
+    st.markdown("---")
+    
+    # Annual Parameters
+    st.markdown("### ⚙️ Parameter Analisis Tahunan")
+    
+    param_cols = st.columns([1, 1, 1, 1])
+    
+    with param_cols[0]:
+        cycle_days = st.number_input("⏱️ Siklus (hari)", 90, 150, 115, help="Veg + Gen + Panen + Jeda")
+    
+    with param_cols[1]:
+        cycles_per_year = 365 // cycle_days
+        st.metric("📊 Siklus/Tahun", f"{cycles_per_year} siklus")
+    
+    with param_cols[2]:
+        stems_per_plant = st.number_input("🌸 Tangkai/Tanaman", 2.0, 5.0, 3.5, step=0.5)
+    
+    with param_cols[3]:
+        survival_rate = st.number_input("✅ Survival Rate (%)", 70, 100, 90) / 100
+    
+    st.markdown("### 💰 Parameter Harga & Biaya")
+    
+    price_cols = st.columns([1, 1, 1])
+    
+    with price_cols[0]:
+        avg_price = st.number_input("💵 Harga Jual Rata-rata (Rp/btg)", 500, 2000, 1000, step=50)
+    
+    with price_cols[1]:
+        cost_per_plant = st.number_input("💸 Biaya per Tanaman (Rp)", 200, 1000, 450, step=50)
+    
+    with price_cols[2]:
+        overhead_monthly = st.number_input("🏢 Overhead/Bulan (Rp)", 1000000, 20000000, 5000000, step=500000)
+    
+    st.markdown("---")
+    
+    # Calculate totals
+    st.markdown("### 📊 Ringkasan Produksi Tahunan")
+    
+    # Per-house calculations
+    annual_data = []
+    total_plants_all = 0
+    total_stems_all = 0
+    total_revenue_all = 0
+    total_cost_all = 0
+    
+    for key, house in houses.items():
+        plants_per_cycle = house.get('total_plants', DEFAULT_PLANTS_PER_BED * 12)
+        surviving_plants = int(plants_per_cycle * survival_rate)
+        stems_per_cycle = int(surviving_plants * stems_per_plant)
+        
+        annual_plants = plants_per_cycle * cycles_per_year
+        annual_stems = stems_per_cycle * cycles_per_year
+        annual_revenue = annual_stems * avg_price
+        annual_cost = (plants_per_cycle * cost_per_plant * cycles_per_year)
+        annual_profit = annual_revenue - annual_cost
+        
+        total_plants_all += annual_plants
+        total_stems_all += annual_stems
+        total_revenue_all += annual_revenue
+        total_cost_all += annual_cost
+        
+        annual_data.append({
+            "House": house.get('name', key),
+            "Bedengan": house.get('beds', 12),
+            "Tanaman/Siklus": f"{plants_per_cycle:,}",
+            "Tangkai/Tahun": f"{annual_stems:,}",
+            "Pendapatan": f"Rp {annual_revenue:,.0f}",
+            "Biaya": f"Rp {annual_cost:,.0f}",
+            "Profit": f"Rp {annual_profit:,.0f}"
+        })
+    
+    # Add overhead
+    total_overhead = overhead_monthly * 12
+    total_cost_with_overhead = total_cost_all + total_overhead
+    total_profit = total_revenue_all - total_cost_with_overhead
+    
+    st.dataframe(pd.DataFrame(annual_data), use_container_width=True, hide_index=True)
+    
+    # Summary metrics
+    st.markdown("### 💰 Ringkasan Keuangan Tahunan")
+    
+    sum_cols = st.columns(4)
+    
+    with sum_cols[0]:
+        st.metric("🌱 Total Tanaman/Tahun", f"{total_plants_all:,}")
+    with sum_cols[1]:
+        st.metric("🌸 Total Tangkai/Tahun", f"{total_stems_all:,}")
+    with sum_cols[2]:
+        st.metric("💵 Total Pendapatan", f"Rp {total_revenue_all:,.0f}")
+    with sum_cols[3]:
+        st.metric("💸 Total Biaya Produksi", f"Rp {total_cost_all:,.0f}")
+    
+    st.markdown("---")
+    
+    fin_cols = st.columns(3)
+    
+    with fin_cols[0]:
+        st.metric("🏢 Overhead Tahunan", f"Rp {total_overhead:,.0f}", f"Rp {overhead_monthly:,}/bulan")
+    
+    with fin_cols[1]:
+        st.metric("💸 Total Biaya (+ Overhead)", f"Rp {total_cost_with_overhead:,.0f}")
+    
+    with fin_cols[2]:
+        profit_color = "normal" if total_profit > 0 else "inverse"
+        margin = (total_profit / total_revenue_all * 100) if total_revenue_all > 0 else 0
+        st.metric("📈 **NET PROFIT TAHUNAN**", f"Rp {total_profit:,.0f}", f"Margin: {margin:.1f}%", delta_color=profit_color)
+    
+    # Monthly breakdown
+    st.markdown("### 📅 Proyeksi Bulanan")
+    
+    monthly_revenue = total_revenue_all / 12
+    monthly_cost = total_cost_with_overhead / 12
+    monthly_profit = total_profit / 12
+    
+    m_cols = st.columns(3)
+    with m_cols[0]:
+        st.metric("💵 Pendapatan/Bulan", f"Rp {monthly_revenue:,.0f}")
+    with m_cols[1]:
+        st.metric("💸 Biaya/Bulan", f"Rp {monthly_cost:,.0f}")
+    with m_cols[2]:
+        st.metric("📈 Profit/Bulan", f"Rp {monthly_profit:,.0f}")
+    
+    # ROI calculation
+    st.markdown("### 📊 Analisis ROI")
+    
+    roi_cols = st.columns([1, 1, 1.5])
+    
+    with roi_cols[0]:
+        initial_investment = st.number_input("💰 Modal Awal (Rp)", 50000000, 500000000, 150000000, step=10000000)
+    
+    with roi_cols[1]:
+        if total_profit > 0:
+            roi_pct = (total_profit / initial_investment) * 100
+            bep_months = initial_investment / monthly_profit if monthly_profit > 0 else 0
+            st.metric("📈 ROI/Tahun", f"{roi_pct:.1f}%")
+        else:
+            st.metric("📈 ROI/Tahun", "N/A", "Rugi")
+    
+    with roi_cols[2]:
+        if total_profit > 0 and monthly_profit > 0:
+            st.metric("⏱️ Break Even Point", f"{bep_months:.1f} bulan")
+        else:
+            st.metric("⏱️ Break Even Point", "N/A")
+    
+    # Summary box
+    st.markdown("---")
+    st.markdown(f"""
+    <div class="sync-badge">
+        <strong>📈 RINGKASAN ANALISIS TAHUNAN ({num_houses} House)</strong><br><br>
+        📦 Total Bedengan: <strong>{sum(h.get('beds', 12) for h in houses.values())}</strong> |
+        🌱 Tanaman/Tahun: <strong>{total_plants_all:,}</strong> |
+        🌸 Tangkai/Tahun: <strong>{total_stems_all:,}</strong><br><br>
+        💵 Pendapatan: <strong>Rp {total_revenue_all:,.0f}</strong> |
+        💸 Biaya: <strong>Rp {total_cost_with_overhead:,.0f}</strong> |
+        📈 Profit: <strong>Rp {total_profit:,.0f}</strong><br><br>
+        📊 Margin: <strong>{margin:.1f}%</strong> |
+        📈 ROI: <strong>{roi_pct:.1f}%</strong> |
+        ⏱️ BEP: <strong>{bep_months:.1f} bulan</strong>
+    </div>
+    """, unsafe_allow_html=True)
 
 # Footer
 st.markdown("---")
