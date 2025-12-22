@@ -363,8 +363,8 @@ with tab2:
     
     st.markdown("---")
     
-    # SUMMARY TABLE
-    st.markdown("### 💰 Ringkasan Hasil Grading")
+    # SUMMARY TABLE - Current Variety
+    st.markdown(f"### 💰 Ringkasan Grading {selected_variety}")
     
     col_sum1, col_sum2, col_sum3 = st.columns(3)
     
@@ -379,6 +379,73 @@ with tab2:
     with col_sum3:
         st.metric("📦 **TOTAL BATANG**", f"{total_graded:,}")
         st.metric("💰 **TOTAL PENDAPATAN**", f"Rp {total_revenue:,.0f}")
+    
+    # ========== RINGKASAN SEMUA VARIETAS ==========
+    st.markdown("---")
+    st.markdown("### 🌈 Ringkasan Keseluruhan (Semua Varietas)")
+    
+    # Calculate totals for all varieties
+    all_variety_data = st.session_state.grading_data_variety
+    
+    def calculate_variety_totals(var_key):
+        var_data = all_variety_data[var_key]
+        stems_normal = sum(var_data[g['key']] * g['qty'] for g in normal_grades)
+        stems_bs = sum(var_data[g['key']] * g['qty'] for g in bs_grades)
+        rev_normal = sum(var_data[g['key']] * g['qty'] * st.session_state.grade_prices[g['key']] for g in normal_grades)
+        rev_bs = sum(var_data[g['key']] * g['qty'] * st.session_state.grade_prices[g['key']] for g in bs_grades)
+        return {
+            'stems': stems_normal + stems_bs,
+            'normal': stems_normal,
+            'bs': stems_bs,
+            'revenue': rev_normal + rev_bs
+        }
+    
+    totals_putih = calculate_variety_totals('putih')
+    totals_pink = calculate_variety_totals('pink')
+    totals_kuning = calculate_variety_totals('kuning')
+    
+    grand_total_stems = totals_putih['stems'] + totals_pink['stems'] + totals_kuning['stems']
+    grand_total_revenue = totals_putih['revenue'] + totals_pink['revenue'] + totals_kuning['revenue']
+    
+    # Display per variety summary
+    var_cols = st.columns(4)
+    
+    with var_cols[0]:
+        pct_putih = (totals_putih['stems'] / grand_total_stems * 100) if grand_total_stems > 0 else 0
+        st.markdown("**🤍 Putih**")
+        st.metric("Batang", f"{totals_putih['stems']:,}", f"{pct_putih:.1f}%")
+        st.metric("Pendapatan", f"Rp {totals_putih['revenue']:,.0f}")
+    
+    with var_cols[1]:
+        pct_pink = (totals_pink['stems'] / grand_total_stems * 100) if grand_total_stems > 0 else 0
+        st.markdown("**💗 Pink**")
+        st.metric("Batang", f"{totals_pink['stems']:,}", f"{pct_pink:.1f}%")
+        st.metric("Pendapatan", f"Rp {totals_pink['revenue']:,.0f}")
+    
+    with var_cols[2]:
+        pct_kuning = (totals_kuning['stems'] / grand_total_stems * 100) if grand_total_stems > 0 else 0
+        st.markdown("**💛 Kuning**")
+        st.metric("Batang", f"{totals_kuning['stems']:,}", f"{pct_kuning:.1f}%")
+        st.metric("Pendapatan", f"Rp {totals_kuning['revenue']:,.0f}")
+    
+    with var_cols[3]:
+        st.markdown("**🌈 TOTAL**")
+        st.metric("Batang", f"{grand_total_stems:,}")
+        st.metric("Pendapatan", f"Rp {grand_total_revenue:,.0f}")
+    
+    # Proportion chart for all varieties
+    if grand_total_stems > 0:
+        st.markdown("#### 📊 Proporsi per Varietas")
+        
+        fig_var = go.Figure(data=[go.Pie(
+            labels=['Putih', 'Pink', 'Kuning'],
+            values=[totals_putih['stems'], totals_pink['stems'], totals_kuning['stems']],
+            hole=0.4,
+            marker_colors=['#f8fafc', '#f9a8d4', '#fcd34d'],
+            textinfo='label+percent'
+        )])
+        fig_var.update_layout(title="Distribusi Batang per Varietas", height=300)
+        st.plotly_chart(fig_var, use_container_width=True)
     
     # Detailed breakdown table
     with st.expander("📋 Lihat Rincian per Grade", expanded=False):
