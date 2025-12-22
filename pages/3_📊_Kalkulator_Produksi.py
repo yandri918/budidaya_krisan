@@ -96,26 +96,27 @@ with tab1:
     
     # House naming and configuration
     with st.expander("✏️ Konfigurasi Detail per House", expanded=True):
-        st.info("Atur nama, jumlah bedengan, dan proporsi varietas untuk setiap house")
+        st.info("Atur nama, bedengan, parameter tanam, dan proporsi varietas tiap house")
         
         house_configs = {}
         
         for i in range(num_houses):
             st.markdown(f"##### 🏠 House {i+1}")
             
-            h_cols = st.columns([1.5, 1, 1, 1, 1])
-            
             # Get existing config or defaults
             existing = st.session_state.house_database.get(f"house_{i+1}", {})
             
-            with h_cols[0]:
+            # Row 1: Nama, Bedengan, Panjang, Baris, Jarak Tanam
+            row1 = st.columns([1.5, 0.8, 0.8, 0.8, 0.8])
+            
+            with row1[0]:
                 h_name = st.text_input(
                     "Nama",
                     value=existing.get('name', f"House {i+1}"),
                     key=f"h_name_{i+1}"
                 )
             
-            with h_cols[1]:
+            with row1[1]:
                 h_beds = st.number_input(
                     "Bedengan",
                     min_value=1, max_value=50,
@@ -123,7 +124,34 @@ with tab1:
                     key=f"h_beds_{i+1}"
                 )
             
-            with h_cols[2]:
+            with row1[2]:
+                h_length = st.number_input(
+                    "Panjang (m)",
+                    min_value=5, max_value=50,
+                    value=existing.get('bed_length', 25),
+                    key=f"h_length_{i+1}"
+                )
+            
+            with row1[3]:
+                h_rows = st.number_input(
+                    "Baris/bed",
+                    min_value=4, max_value=12,
+                    value=existing.get('rows_per_bed', 8),
+                    key=f"h_rows_{i+1}"
+                )
+            
+            with row1[4]:
+                h_spacing = st.selectbox(
+                    "Jarak (cm)",
+                    [10, 12.5, 15],
+                    index=[10, 12.5, 15].index(existing.get('plant_spacing', 12.5)),
+                    key=f"h_spacing_{i+1}"
+                )
+            
+            # Row 2: Varietas proportion
+            row2 = st.columns([1, 1, 1, 1.5])
+            
+            with row2[0]:
                 h_putih = st.number_input(
                     "🤍 Putih",
                     min_value=0, max_value=h_beds,
@@ -131,7 +159,7 @@ with tab1:
                     key=f"h_putih_{i+1}"
                 )
             
-            with h_cols[3]:
+            with row2[1]:
                 h_pink = st.number_input(
                     "💗 Pink",
                     min_value=0, max_value=h_beds,
@@ -139,13 +167,21 @@ with tab1:
                     key=f"h_pink_{i+1}"
                 )
             
-            with h_cols[4]:
+            with row2[2]:
                 h_kuning = st.number_input(
                     "💛 Kuning",
                     min_value=0, max_value=h_beds,
                     value=min(existing.get('beds_kuning', h_beds - (h_beds // 3) * 2), h_beds),
                     key=f"h_kuning_{i+1}"
                 )
+            
+            # Calculate plants
+            plants_per_row = int((h_length * 100) / h_spacing)
+            plants_per_bed = plants_per_row * h_rows
+            total_plants_house = plants_per_bed * h_beds
+            
+            with row2[3]:
+                st.metric("🌱 Total Tanaman", f"{total_plants_house:,}")
             
             # Validate total
             total_var = h_putih + h_pink + h_kuning
@@ -155,6 +191,11 @@ with tab1:
             house_configs[f"house_{i+1}"] = {
                 'name': h_name,
                 'beds': h_beds,
+                'bed_length': h_length,
+                'rows_per_bed': h_rows,
+                'plant_spacing': h_spacing,
+                'plants_per_bed': plants_per_bed,
+                'total_plants': total_plants_house,
                 'beds_putih': h_putih,
                 'beds_pink': h_pink,
                 'beds_kuning': h_kuning,
@@ -169,9 +210,11 @@ with tab1:
             
             # Calculate totals
             total_beds_all = sum(c['beds'] for c in house_configs.values())
+            total_plants_all = sum(c['total_plants'] for c in house_configs.values())
             st.session_state.krisan_data['total_beds_all_houses'] = total_beds_all
+            st.session_state.krisan_data['total_plants_all_houses'] = total_plants_all
             
-            st.success(f"✅ {num_houses} house tersimpan! Total {total_beds_all} bedengan")
+            st.success(f"✅ {num_houses} house tersimpan! Total {total_beds_all} bedengan, {total_plants_all:,} tanaman")
             st.rerun()
     
     # Show saved houses summary
@@ -179,20 +222,32 @@ with tab1:
         st.markdown("#### 📋 Ringkasan Konfigurasi House")
         house_list = []
         total_beds = 0
+        total_plants = 0
         for key, data in st.session_state.house_database.items():
             beds_count = data.get('beds', 12)
+            plants_count = data.get('total_plants', 0)
             total_beds += beds_count
+            total_plants += plants_count
             house_list.append({
                 "ID": data.get('id', 0),
-                "Nama House": data.get('name', key),
-                "Bedengan": beds_count,
-                "🤍 Putih": data.get('beds_putih', 0),
-                "💗 Pink": data.get('beds_pink', 0),
-                "💛 Kuning": data.get('beds_kuning', 0)
+                "Nama": data.get('name', key),
+                "Bed": beds_count,
+                "Pjg(m)": data.get('bed_length', 25),
+                "Baris": data.get('rows_per_bed', 8),
+                "Jarak": f"{data.get('plant_spacing', 12.5)}cm",
+                "🌱Tanaman": f"{plants_count:,}",
+                "🤍": data.get('beds_putih', 0),
+                "💗": data.get('beds_pink', 0),
+                "💛": data.get('beds_kuning', 0)
             })
         if house_list:
             st.dataframe(pd.DataFrame(house_list), use_container_width=True, hide_index=True)
-            st.metric("📊 Total Semua Bedengan", f"{total_beds}")
+            
+            m1, m2 = st.columns(2)
+            with m1:
+                st.metric("📦 Total Bedengan", f"{total_beds}")
+            with m2:
+                st.metric("🌱 Total Tanaman", f"{total_plants:,}")
     
     st.markdown("---")
     
