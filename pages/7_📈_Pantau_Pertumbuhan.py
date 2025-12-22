@@ -103,8 +103,20 @@ with st.sidebar:
     
     st.markdown("---")
     st.markdown("### 📍 Lokasi Kebun (Open-Meteo)")
-    lat = st.number_input("Latitude", value=-6.80, format="%.4f")
-    lon = st.number_input("Longitude", value=107.60, format="%.4f")
+    
+    # Initialize lat/lon in session state if not exist
+    if 'map_lat' not in st.session_state:
+        st.session_state.map_lat = -6.80
+    if 'map_lon' not in st.session_state:
+        st.session_state.map_lon = 107.60
+
+    # Input widgets linked to session state
+    lat = st.number_input("Latitude", value=st.session_state.map_lat, format="%.4f", key="input_lat")
+    lon = st.number_input("Longitude", value=st.session_state.map_lon, format="%.4f", key="input_lon")
+    
+    # Sync input changes back to map state
+    st.session_state.map_lat = lat
+    st.session_state.map_lon = lon
     
     current_weather = None
     if st.button("📡 Ambil Data Cuaca Real-time"):
@@ -114,14 +126,31 @@ with st.sidebar:
             st.success("Data Open-Meteo berhasil diambil!")
             
     # Interactive Map
+    st.caption("Klik pada peta untuk pilih lokasi:")
     with st.expander("🗺️ Lihat Peta Lokasi", expanded=True):
-        m = folium.Map(location=[lat, lon], zoom_start=13)
+        m = folium.Map(location=[st.session_state.map_lat, st.session_state.map_lon], zoom_start=13)
+        m.add_child(folium.LatLngPopup()) # Enable click popup
+        
         folium.Marker(
-            [lat, lon], 
+            [st.session_state.map_lat, st.session_state.map_lon], 
             popup="Lokasi Kebun", 
-            tooltip="Kebun Krisan"
+            tooltip="Kebun Krisan",
+            icon=folium.Icon(color="red", icon="home")
         ).add_to(m)
-        st_folium(m, height=200, width=280)
+        
+        # Capture map clicks
+        map_data = st_folium(m, height=250, width=280)
+
+    # Update state if map is clicked (Click-to-Pick Logic)
+    if map_data and map_data.get("last_clicked"):
+        clicked_lat = map_data["last_clicked"]["lat"]
+        clicked_lon = map_data["last_clicked"]["lng"]
+        
+        # Only rerun if location actually changed to prevent loop
+        if abs(clicked_lat - st.session_state.map_lat) > 0.0001 or abs(clicked_lon - st.session_state.map_lon) > 0.0001:
+            st.session_state.map_lat = clicked_lat
+            st.session_state.map_lon = clicked_lon
+            st.rerun()
     
     # Use cached weather if available logic
     default_temp = 24.5
