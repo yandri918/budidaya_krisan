@@ -47,13 +47,15 @@ with tab1:
     with col_setup:
         st.markdown("### ⚙️ Konfigurasi Siklus")
         
-        # Get house list from database or use default
+        # Get house list - priority: house_database > house_list > default
         if 'house_database' in st.session_state and st.session_state.house_database:
             house_options = [data['name'] for key, data in st.session_state.house_database.items()]
-            st.caption("📊 Data house dari Kalkulator Produksi")
+        elif 'house_list' in st.session_state:
+            house_options = st.session_state.house_list
         else:
-            house_options = ["House 1", "House 2", "House 3", "House 4"]
-            st.caption("⚠️ Konfigurasi house manual (sinkronkan di Kalkulator Produksi)")
+            # Initialize house_list if not exists
+            st.session_state.house_list = ["House 1", "House 2", "House 3", "House 4"]
+            house_options = st.session_state.house_list
         
         house_name = st.selectbox(
             "🏠 Pilih House",
@@ -61,10 +63,22 @@ with tab1:
             key="plant_house"
         )
         
+        # Option to add new house
+        with st.expander("➕ Tambah House Baru"):
+            new_house = st.text_input("Nama House Baru", key="add_house_mgt")
+            if st.button("Tambah House", key="btn_add_house_mgt"):
+                if new_house:
+                    if 'house_list' not in st.session_state:
+                        st.session_state.house_list = list(house_options)
+                    if new_house not in st.session_state.house_list:
+                        st.session_state.house_list.append(new_house)
+                        st.success(f"✅ {new_house} ditambahkan!")
+                        st.rerun()
+        
         num_beds_group = st.number_input(
-            "📦 Jumlah Bedengan per Grup Tanam",
-            min_value=1, max_value=20, value=3,
-            help="Bedengan yang ditanam bersamaan dalam 1 minggu"
+            "📦 Jumlah Bedengan dalam House",
+            min_value=1, max_value=20, value=12,
+            help="Jumlah bedengan dalam satu house (ditanam bersamaan)"
         )
         
         st.markdown("#### ⏱️ Durasi Fase (hari)")
