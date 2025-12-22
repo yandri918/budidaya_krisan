@@ -213,13 +213,19 @@ with tab2:
     # GRADE NORMAL (Panjang 90 cm)
     st.markdown("### ✅ Grade Normal (Panjang 90 cm)")
     
-    # Harga per batang untuk setiap grade
+    # Initialize price session state
+    if 'grade_prices' not in st.session_state:
+        st.session_state.grade_prices = {
+            'g60': 1000, 'g80': 1000, 'g100': 1000, 'g120': 1000, 'g160': 1000,
+            'r80': 500, 'r100': 500, 'r160': 400, 'r200': 350
+        }
+    
     normal_grades = [
-        {"name": "Grade 60", "key": "g60", "qty": 60, "price_per_stem": 1000},
-        {"name": "Grade 80", "key": "g80", "qty": 80, "price_per_stem": 1000},
-        {"name": "Grade 100", "key": "g100", "qty": 100, "price_per_stem": 1000},
-        {"name": "Grade 120", "key": "g120", "qty": 120, "price_per_stem": 1000},
-        {"name": "Grade 160", "key": "g160", "qty": 160, "price_per_stem": 1000},
+        {"name": "Grade 60", "key": "g60", "qty": 60},
+        {"name": "Grade 80", "key": "g80", "qty": 80},
+        {"name": "Grade 100", "key": "g100", "qty": 100},
+        {"name": "Grade 120", "key": "g120", "qty": 120},
+        {"name": "Grade 160", "key": "g160", "qty": 160},
     ]
     
     cols_normal = st.columns(5)
@@ -234,17 +240,27 @@ with tab2:
             """, unsafe_allow_html=True)
             
             grading_data[grade['key']] = st.number_input(
-                "Jumlah Ikat",
+                "Jml Ikat",
                 min_value=0, max_value=500, value=grading_data[grade['key']],
                 key=f"input_{variety_key}_{grade['key']}",
                 label_visibility="visible"
             )
             
-            # Hitung total batang dan harga per grade
-            total_stems_grade = grading_data[grade['key']] * grade['qty']
-            total_price_grade = total_stems_grade * grade['price_per_stem']
+            # Harga per batang (editable)
+            st.session_state.grade_prices[grade['key']] = st.number_input(
+                "Rp/btg",
+                min_value=100, max_value=10000, 
+                value=st.session_state.grade_prices[grade['key']],
+                step=50,
+                key=f"price_{variety_key}_{grade['key']}",
+                label_visibility="visible"
+            )
             
-            st.caption(f"**Rp {grade['price_per_stem']:,}/btg**")
+            # Hitung total
+            total_stems_grade = grading_data[grade['key']] * grade['qty']
+            price_per_stem = st.session_state.grade_prices[grade['key']]
+            total_price_grade = total_stems_grade * price_per_stem
+            
             if total_stems_grade > 0:
                 st.markdown(f"<small>= {total_stems_grade:,} btg<br>**Rp {total_price_grade:,.0f}**</small>", unsafe_allow_html=True)
     
@@ -255,10 +271,10 @@ with tab2:
     st.caption("Untuk bunga dengan batang lebih pendek dari standar")
     
     bs_grades = [
-        {"name": "R-80", "key": "r80", "qty": 80, "length": 80, "price_per_stem": 500},
-        {"name": "R-100", "key": "r100", "qty": 100, "length": 80, "price_per_stem": 500},
-        {"name": "R-160", "key": "r160", "qty": 160, "length": 70, "price_per_stem": 400},
-        {"name": "R-200", "key": "r200", "qty": 200, "length": 70, "price_per_stem": 350},
+        {"name": "R-80", "key": "r80", "qty": 80, "length": 80},
+        {"name": "R-100", "key": "r100", "qty": 100, "length": 80},
+        {"name": "R-160", "key": "r160", "qty": 160, "length": 70},
+        {"name": "R-200", "key": "r200", "qty": 200, "length": 70},
     ]
     
     cols_bs = st.columns(4)
@@ -279,11 +295,21 @@ with tab2:
                 label_visibility="visible"
             )
             
-            # Hitung total batang dan harga per grade
-            total_stems_grade = grading_data[grade['key']] * grade['qty']
-            total_price_grade = total_stems_grade * grade['price_per_stem']
+            # Harga per batang (editable)
+            st.session_state.grade_prices[grade['key']] = st.number_input(
+                "Rp/btg",
+                min_value=100, max_value=10000, 
+                value=st.session_state.grade_prices[grade['key']],
+                step=50,
+                key=f"price_{variety_key}_{grade['key']}",
+                label_visibility="visible"
+            )
             
-            st.caption(f"**Rp {grade['price_per_stem']:,}/btg**")
+            # Hitung total
+            total_stems_grade = grading_data[grade['key']] * grade['qty']
+            price_per_stem = st.session_state.grade_prices[grade['key']]
+            total_price_grade = total_stems_grade * price_per_stem
+            
             if total_stems_grade > 0:
                 st.markdown(f"<small>= {total_stems_grade:,} btg<br>**Rp {total_price_grade:,.0f}**</small>", unsafe_allow_html=True)
     
@@ -304,14 +330,14 @@ with tab2:
     progress_pct = (total_graded / potential_harvest * 100) if potential_harvest > 0 else 0
     remaining = potential_harvest - total_graded
     
-    # Revenue calculation - (ikat × qty) × price per stem
+    # Revenue calculation - (ikat × qty) × price per stem from session state
     revenue_normal = sum(
-        grading_data[g['key']] * g['qty'] * g['price_per_stem'] 
+        grading_data[g['key']] * g['qty'] * st.session_state.grade_prices[g['key']] 
         for g in normal_grades
     )
     
     revenue_bs = sum(
-        grading_data[g['key']] * g['qty'] * g['price_per_stem'] 
+        grading_data[g['key']] * g['qty'] * st.session_state.grade_prices[g['key']] 
         for g in bs_grades
     )
     
