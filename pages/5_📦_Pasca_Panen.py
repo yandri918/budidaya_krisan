@@ -819,27 +819,31 @@ with tab2:
         for g in normal_grades:
             ikat = grading_data.get(g['key'], 0)
             if ikat > 0:
-                price_per_stem = g['price'] / g['qty']
+                price_per_stem_actual = st.session_state.grade_prices.get(g['key'], 0)
+                price_per_ikat = price_per_stem_actual * g['qty']
+                
                 grade_price_data.append({
                     "Grade": g['name'],
                     "Batang/Ikat": g['qty'],
-                    "Harga/Ikat": f"Rp {g['price']:,}",
-                    "Harga/Batang": f"Rp {price_per_stem:,.0f}",
-                    "vs Ekspektasi": f"Rp {price_per_stem - expected_price_per_stem:+,.0f}",
-                    "Status": "✅" if price_per_stem >= expected_price_per_stem else "⚠️"
+                    "Harga/Ikat": f"Rp {price_per_ikat:,.0f}",
+                    "Harga/Batang": f"Rp {price_per_stem_actual:,.0f}",
+                    "vs Ekspektasi": f"Rp {price_per_stem_actual - expected_price_per_stem:+,.0f}",
+                    "Status": "✅" if price_per_stem_actual >= expected_price_per_stem else "⚠️"
                 })
         
         for g in bs_grades:
             ikat = grading_data.get(g['key'], 0)
             if ikat > 0:
-                price_per_stem = g['price'] / g['qty']
+                price_per_stem_actual = st.session_state.grade_prices.get(g['key'], 0)
+                price_per_ikat = price_per_stem_actual * g['qty']
+                
                 grade_price_data.append({
                     "Grade": g['name'],
                     "Batang/Ikat": g['qty'],
-                    "Harga/Ikat": f"Rp {g['price']:,}",
-                    "Harga/Batang": f"Rp {price_per_stem:,.0f}",
-                    "vs Ekspektasi": f"Rp {price_per_stem - expected_price_per_stem:+,.0f}",
-                    "Status": "✅" if price_per_stem >= expected_price_per_stem else "⚠️"
+                    "Harga/Ikat": f"Rp {price_per_ikat:,.0f}",
+                    "Harga/Batang": f"Rp {price_per_stem_actual:,.0f}",
+                    "vs Ekspektasi": f"Rp {price_per_stem_actual - expected_price_per_stem:+,.0f}",
+                    "Status": "✅" if price_per_stem_actual >= expected_price_per_stem else "⚠️"
                 })
         
         if grade_price_data:
