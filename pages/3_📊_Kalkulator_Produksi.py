@@ -820,7 +820,7 @@ with tab5:
         st.metric("📊 Siklus/Tahun", f"{cycles_per_year} siklus")
     
     with param_cols[2]:
-        stems_per_plant = st.number_input("🌸 Tangkai/Tanaman", 2.0, 5.0, 3.5, step=0.5)
+        stems_per_plant = st.number_input("🌸 Tangkai/Tanaman", 1.0, 3.0, 1.0, step=0.5, help="1 tanaman = 1 tangkai bunga")
     
     with param_cols[3]:
         survival_rate = st.number_input("✅ Survival Rate (%)", 70, 100, 90) / 100
