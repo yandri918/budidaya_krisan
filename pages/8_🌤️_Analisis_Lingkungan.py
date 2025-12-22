@@ -284,10 +284,25 @@ if current and forecast:
         
         # Display as styled dataframe
         st.dataframe(
-            df_daily.style.background_gradient(subset=['Peluang Hujan (%)'], cmap='Blues')
-                          .background_gradient(subset=['Suhu Max'], cmap='Reds'),
+            df_daily,
             use_container_width=True,
-            hide_index=True
+            hide_index=True,
+            column_config={
+                "Peluang Hujan (%)": st.column_config.ProgressColumn(
+                    "Peluang Hujan",
+                    format="%d%%",
+                    min_value=0,
+                    max_value=100,
+                ),
+                "Suhu Max": st.column_config.NumberColumn(
+                    "Suhu Max",
+                    format="%.1f°C",
+                ),
+                "Hujan (mm)": st.column_config.NumberColumn(
+                    "Hujan",
+                    format="%.1f mm",
+                )
+            }
         )
         
         # Chart Forecast
