@@ -210,80 +210,81 @@ with tab2:
     # Use current variety data
     grading_data = st.session_state.grading_data_variety[variety_key]
     
-    # GRADE NORMAL (Panjang 90 cm)
+    # GRADE NORMAL (Panjang 90 cm) - HARGA PER BATANG
     st.markdown("### ✅ Grade Normal (Panjang 90 cm)")
+    st.caption("Masukkan jumlah batang per grade")
     
     normal_grades = [
-        {"name": "Grade 60", "key": "g60", "qty": 60, "price": 60000},
-        {"name": "Grade 80", "key": "g80", "qty": 80, "price": 80000},
-        {"name": "Grade 100", "key": "g100", "qty": 100, "price": 100000},
-        {"name": "Grade 120", "key": "g120", "qty": 120, "price": 120000},
-        {"name": "Grade 160", "key": "g160", "qty": 160, "price": 160000},
+        {"name": "Super", "key": "g60", "price_per_stem": 1500, "desc": "Kualitas terbaik"},
+        {"name": "Grade A", "key": "g80", "price_per_stem": 1200, "desc": "Kualitas premium"},
+        {"name": "Grade B", "key": "g100", "price_per_stem": 1000, "desc": "Kualitas standar"},
+        {"name": "Grade C", "key": "g120", "price_per_stem": 800, "desc": "Kualitas ekonomi"},
     ]
     
-    cols_normal = st.columns(5)
+    cols_normal = st.columns(4)
     
     for i, grade in enumerate(normal_grades):
         with cols_normal[i]:
             st.markdown(f"""
             <div class="grade-card">
                 <strong>{grade['name']}</strong><br>
-                <small>{grade['qty']} btg/ikat</small>
+                <small>{grade['desc']}</small>
             </div>
             """, unsafe_allow_html=True)
             
             grading_data[grade['key']] = st.number_input(
-                "Jumlah Ikat",
-                min_value=0, max_value=500, value=grading_data[grade['key']],
+                "Jumlah Batang",
+                min_value=0, max_value=50000, value=grading_data[grade['key']],
                 key=f"input_{variety_key}_{grade['key']}",
+                step=100,
                 label_visibility="visible"
             )
             
-            st.caption(f"Rp {grade['price']:,}/ikat")
+            st.caption(f"**Rp {grade['price_per_stem']:,}/batang**")
     
     st.markdown("---")
     
-    # GRADE BS/RUSAK (Panjang 70-80 cm)
+    # GRADE BS/RUSAK (Panjang 70-80 cm) - HARGA PER BATANG 
     st.markdown("### ⚠️ Grade Rusak/BS (Panjang 70-80 cm)")
     st.caption("Untuk bunga dengan batang lebih pendek dari standar")
     
     bs_grades = [
-        {"name": "R-80", "key": "r80", "qty": 80, "length": 80, "price": 40000},
-        {"name": "R-100", "key": "r100", "qty": 100, "length": 80, "price": 50000},
-        {"name": "R-160", "key": "r160", "qty": 160, "length": 70, "price": 60000},
-        {"name": "R-200", "key": "r200", "qty": 200, "length": 70, "price": 70000},
+        {"name": "BS-A", "key": "r80", "price_per_stem": 600, "desc": "80cm, minor defect"},
+        {"name": "BS-B", "key": "r100", "price_per_stem": 500, "desc": "70cm, some defect"},
+        {"name": "BS-C", "key": "r160", "price_per_stem": 400, "desc": "60cm, reject"},
     ]
     
-    cols_bs = st.columns(4)
+    cols_bs = st.columns(3)
     
     for i, grade in enumerate(bs_grades):
         with cols_bs[i]:
             st.markdown(f"""
             <div class="grade-bs">
                 <strong>{grade['name']}</strong><br>
-                <small>({grade['qty']} btg, {grade['length']}cm)</small>
+                <small>{grade['desc']}</small>
             </div>
             """, unsafe_allow_html=True)
             
             grading_data[grade['key']] = st.number_input(
-                "Jml Ikat",
-                min_value=0, max_value=500, value=grading_data[grade['key']],
+                "Jumlah Batang",
+                min_value=0, max_value=50000, value=grading_data[grade['key']],
                 key=f"input_{variety_key}_{grade['key']}",
+                step=100,
                 label_visibility="visible"
             )
             
-            st.caption(f"Rp {grade['price']:,}/ikat")
+            st.caption(f"**Rp {grade['price_per_stem']:,}/batang**")
     
     st.markdown("---")
     
-    # CALCULATE TOTALS (for current variety)
+    # CALCULATE TOTALS (for current variety) - now direct stem count
     total_normal_stems = sum(
-        grading_data[g['key']] * g['qty'] 
+        grading_data[g['key']]  # direct stem count
         for g in normal_grades
     )
     
     total_bs_stems = sum(
-        grading_data[g['key']] * g['qty'] 
+        grading_data[g['key']]  # direct stem count
         for g in bs_grades
     )
     
@@ -291,14 +292,14 @@ with tab2:
     progress_pct = (total_graded / potential_harvest * 100) if potential_harvest > 0 else 0
     remaining = potential_harvest - total_graded
     
-    # Revenue calculation
+    # Revenue calculation - stem count × price per stem
     revenue_normal = sum(
-        grading_data[g['key']] * g['price'] 
+        grading_data[g['key']] * g['price_per_stem'] 
         for g in normal_grades
     )
     
     revenue_bs = sum(
-        grading_data[g['key']] * g['price'] 
+        grading_data[g['key']] * g['price_per_stem'] 
         for g in bs_grades
     )
     
