@@ -210,81 +210,93 @@ with tab2:
     # Use current variety data
     grading_data = st.session_state.grading_data_variety[variety_key]
     
-    # GRADE NORMAL (Panjang 90 cm) - HARGA PER BATANG
+    # GRADE NORMAL (Panjang 90 cm)
     st.markdown("### ✅ Grade Normal (Panjang 90 cm)")
-    st.caption("Masukkan jumlah batang per grade")
     
+    # Harga per batang untuk setiap grade
     normal_grades = [
-        {"name": "Super", "key": "g60", "price_per_stem": 1500, "desc": "Kualitas terbaik"},
-        {"name": "Grade A", "key": "g80", "price_per_stem": 1200, "desc": "Kualitas premium"},
-        {"name": "Grade B", "key": "g100", "price_per_stem": 1000, "desc": "Kualitas standar"},
-        {"name": "Grade C", "key": "g120", "price_per_stem": 800, "desc": "Kualitas ekonomi"},
+        {"name": "Grade 60", "key": "g60", "qty": 60, "price_per_stem": 1000},
+        {"name": "Grade 80", "key": "g80", "qty": 80, "price_per_stem": 1000},
+        {"name": "Grade 100", "key": "g100", "qty": 100, "price_per_stem": 1000},
+        {"name": "Grade 120", "key": "g120", "qty": 120, "price_per_stem": 1000},
+        {"name": "Grade 160", "key": "g160", "qty": 160, "price_per_stem": 1000},
     ]
     
-    cols_normal = st.columns(4)
+    cols_normal = st.columns(5)
     
     for i, grade in enumerate(normal_grades):
         with cols_normal[i]:
             st.markdown(f"""
             <div class="grade-card">
                 <strong>{grade['name']}</strong><br>
-                <small>{grade['desc']}</small>
+                <small>{grade['qty']} btg/ikat</small>
             </div>
             """, unsafe_allow_html=True)
             
             grading_data[grade['key']] = st.number_input(
-                "Jumlah Batang",
-                min_value=0, max_value=50000, value=grading_data[grade['key']],
+                "Jumlah Ikat",
+                min_value=0, max_value=500, value=grading_data[grade['key']],
                 key=f"input_{variety_key}_{grade['key']}",
-                step=100,
                 label_visibility="visible"
             )
             
-            st.caption(f"**Rp {grade['price_per_stem']:,}/batang**")
+            # Hitung total batang dan harga per grade
+            total_stems_grade = grading_data[grade['key']] * grade['qty']
+            total_price_grade = total_stems_grade * grade['price_per_stem']
+            
+            st.caption(f"**Rp {grade['price_per_stem']:,}/btg**")
+            if total_stems_grade > 0:
+                st.markdown(f"<small>= {total_stems_grade:,} btg<br>**Rp {total_price_grade:,.0f}**</small>", unsafe_allow_html=True)
     
     st.markdown("---")
     
-    # GRADE BS/RUSAK (Panjang 70-80 cm) - HARGA PER BATANG 
+    # GRADE BS/RUSAK (Panjang 70-80 cm)
     st.markdown("### ⚠️ Grade Rusak/BS (Panjang 70-80 cm)")
     st.caption("Untuk bunga dengan batang lebih pendek dari standar")
     
     bs_grades = [
-        {"name": "BS-A", "key": "r80", "price_per_stem": 600, "desc": "80cm, minor defect"},
-        {"name": "BS-B", "key": "r100", "price_per_stem": 500, "desc": "70cm, some defect"},
-        {"name": "BS-C", "key": "r160", "price_per_stem": 400, "desc": "60cm, reject"},
+        {"name": "R-80", "key": "r80", "qty": 80, "length": 80, "price_per_stem": 500},
+        {"name": "R-100", "key": "r100", "qty": 100, "length": 80, "price_per_stem": 500},
+        {"name": "R-160", "key": "r160", "qty": 160, "length": 70, "price_per_stem": 400},
+        {"name": "R-200", "key": "r200", "qty": 200, "length": 70, "price_per_stem": 350},
     ]
     
-    cols_bs = st.columns(3)
+    cols_bs = st.columns(4)
     
     for i, grade in enumerate(bs_grades):
         with cols_bs[i]:
             st.markdown(f"""
             <div class="grade-bs">
                 <strong>{grade['name']}</strong><br>
-                <small>{grade['desc']}</small>
+                <small>({grade['qty']} btg, {grade['length']}cm)</small>
             </div>
             """, unsafe_allow_html=True)
             
             grading_data[grade['key']] = st.number_input(
-                "Jumlah Batang",
-                min_value=0, max_value=50000, value=grading_data[grade['key']],
+                "Jml Ikat",
+                min_value=0, max_value=500, value=grading_data[grade['key']],
                 key=f"input_{variety_key}_{grade['key']}",
-                step=100,
                 label_visibility="visible"
             )
             
-            st.caption(f"**Rp {grade['price_per_stem']:,}/batang**")
+            # Hitung total batang dan harga per grade
+            total_stems_grade = grading_data[grade['key']] * grade['qty']
+            total_price_grade = total_stems_grade * grade['price_per_stem']
+            
+            st.caption(f"**Rp {grade['price_per_stem']:,}/btg**")
+            if total_stems_grade > 0:
+                st.markdown(f"<small>= {total_stems_grade:,} btg<br>**Rp {total_price_grade:,.0f}**</small>", unsafe_allow_html=True)
     
     st.markdown("---")
     
-    # CALCULATE TOTALS (for current variety) - now direct stem count
+    # CALCULATE TOTALS (for current variety) - ikat × qty
     total_normal_stems = sum(
-        grading_data[g['key']]  # direct stem count
+        grading_data[g['key']] * g['qty']
         for g in normal_grades
     )
     
     total_bs_stems = sum(
-        grading_data[g['key']]  # direct stem count
+        grading_data[g['key']] * g['qty']
         for g in bs_grades
     )
     
@@ -292,14 +304,14 @@ with tab2:
     progress_pct = (total_graded / potential_harvest * 100) if potential_harvest > 0 else 0
     remaining = potential_harvest - total_graded
     
-    # Revenue calculation - stem count × price per stem
+    # Revenue calculation - (ikat × qty) × price per stem
     revenue_normal = sum(
-        grading_data[g['key']] * g['price_per_stem'] 
+        grading_data[g['key']] * g['qty'] * g['price_per_stem'] 
         for g in normal_grades
     )
     
     revenue_bs = sum(
-        grading_data[g['key']] * g['price_per_stem'] 
+        grading_data[g['key']] * g['qty'] * g['price_per_stem'] 
         for g in bs_grades
     )
     
