@@ -151,6 +151,9 @@ with tab1:
         st.session_state.krisan_data['surviving_plants'] = surviving_plants
         st.session_state.krisan_data['bed_length'] = bed_length
         st.session_state.krisan_data['plants_per_bed'] = plants_per_bed
+        st.session_state.krisan_data['actual_density'] = actual_density
+        st.session_state.krisan_data['survival_rate'] = survival_rate
+        st.session_state.krisan_data['stems_per_plant'] = stems_per_plant
         
         # Variety data for sync with Pasca Panen
         st.session_state.krisan_data['beds_putih'] = beds_putih

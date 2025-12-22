@@ -591,9 +591,10 @@ with tab2:
             📊 <strong>Data Tersinkronisasi dari Kalkulator Produksi:</strong><br>
             🌱 Total Tanaman: <strong>{kd.get('total_plants', 0):,}</strong> |
             ✅ Tanaman Hidup: <strong>{kd.get('surviving_plants', 0):,}</strong> |
-            🌸 Potensi Tangkai: <strong>{kd.get('total_stems', 0):,}</strong> |
+            🌸 Potensi Tangkai: <strong>{kd.get('total_stems', 0):,}</strong><br>
             📐 Luas: <strong>{kd.get('total_bed_area', 0):.1f}</strong> m² |
-            📦 Bedengan: <strong>{kd.get('num_beds', 0)}</strong> unit
+            📦 Bedengan: <strong>{kd.get('num_beds', 0)}</strong> unit |
+            📊 Densitas: <strong>{kd.get('actual_density', 0):.1f}</strong> tanaman/m²
         </div>
         """, unsafe_allow_html=True)
     
