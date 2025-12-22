@@ -586,13 +586,26 @@ with tab2:
     col_cost, col_expected = st.columns(2)
     
     with col_cost:
-        st.markdown("**📊 Input Parameter Biaya**")
+        st.markdown("**📊 Input Parameter Biaya Produksi**")
         
-        production_cost_total = st.number_input(
-            "💰 Total Biaya Produksi (Rp/siklus)",
-            min_value=1000000, max_value=500000000, value=30000000, step=1000000,
-            help="Total biaya operasional per siklus (dari tab RAB)"
+        operational_cost = st.number_input(
+            "💵 Biaya Operasional (Rp/siklus)",
+            min_value=1000000, max_value=300000000, value=25000000, step=1000000,
+            help="Bibit, pupuk, pestisida, tenaga kerja, listrik, dll"
         )
+        
+        depreciation_cost = st.number_input(
+            "🏠 Biaya Penyusutan House (Rp/siklus)",
+            min_value=500000, max_value=50000000, value=5000000, step=500000,
+            help="Penyusutan greenhouse, irigasi, lampu per siklus"
+        )
+        
+        production_cost_total = operational_cost + depreciation_cost
+        
+        st.metric("💰 **TOTAL BIAYA PRODUKSI**", f"Rp {production_cost_total:,.0f}")
+        st.caption(f"= Operasional Rp {operational_cost:,.0f} + Penyusutan Rp {depreciation_cost:,.0f}")
+        
+        st.markdown("---")
         
         expected_price_per_stem = st.number_input(
             "🎯 Harga Ekspektasi Awal (Rp/batang)",
