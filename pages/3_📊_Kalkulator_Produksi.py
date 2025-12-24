@@ -537,37 +537,70 @@ with tab3:
     with col_rab1:
         st.markdown("### 🏗️ A. Investasi Awal (Modal Tetap)")
         
+        # Get number of houses for scaling logic (reused from Part B logic for consistency)
+        house_db = st.session_state.get('house_database', {})
+        num_houses = len(house_db) if house_db else 1
+        
+        # Cost input mode for Investment - reusing the concept or adding a specific one
+        # To keep it clean, let's auto-detect or ask. 
+        # Since Part B has a toggle, Part A should likely have one too or share it. 
+        # But Part A is at the top. Let's add a toggle here specifically for Investment scaling.
+        
+        inv_input_mode = st.radio(
+            "Mode Input Investasi:",
+            ["Input Total (Semua House)", "Input Per House (Otomatis dikali Jml House)"],
+            index=1,
+            key="inv_mode",
+            help=f"Jika Mode 'Per House' dipilih, investasi akan dikalikan dengan {num_houses} house."
+        )
+        inv_multiplier = num_houses if "Per House" in inv_input_mode else 1
+        
+        if inv_multiplier > 1:
+            st.info(f"💡 Investasi Greenhouse, Lampu, dll akan dikalikan **{inv_multiplier} house**")
+
         with st.expander("📐 Konstruksi Greenhouse", expanded=True):
-            greenhouse_area = st.number_input("Luas Greenhouse (m²)", 100, 5000, 400, 50)
+            greenhouse_area = st.number_input("Luas Greenhouse per House (m²)", 100, 5000, 400, 50)
             cost_gh_per_m2 = st.number_input("Biaya per m² (Rp)", 100000, 500000, 250000, 10000)
-            cost_greenhouse = greenhouse_area * cost_gh_per_m2
-            st.metric("Subtotal Greenhouse", f"Rp {cost_greenhouse:,.0f}")
+            cost_greenhouse = greenhouse_area * cost_gh_per_m2 * inv_multiplier
+            st.metric("Subtotal Greenhouse", f"Rp {cost_greenhouse:,.0f}", f"x {inv_multiplier} house" if inv_multiplier > 1 else "")
         
         with st.expander("💧 Sistem Irigasi (dari Tab 2)"):
-            irrigation_cost = data.get('irrigation_cost', 7500000)
-            st.metric("Subtotal Irigasi", f"Rp {irrigation_cost:,.0f}")
+            # Irrigation cost from Tab 2 is usually total if configured per house logic there.
+            # But let's check. Default 7.5M is likely per house.
+            base_irrigation = data.get('irrigation_cost', 7500000)
+            # If data comes from Tab 2, it might already be total if tab 2 handles multiple houses.
+            # But usually Tab 2 calculates for "Current Configuration". 
+            # If house_db exists, Tab 2 might be just one instance. 
+            # Safest is to apply multiplier if it looks small, but user chose "Per House".
+            # Let's trust the Multiplier logic for Consistency.
+            irrigation_cost = base_irrigation * inv_multiplier
+            st.metric("Subtotal Irigasi", f"Rp {irrigation_cost:,.0f}", f"x {inv_multiplier} house" if inv_multiplier > 1 else "")
         
         with st.expander("💡 Sistem Lampu (Photoperiod)"):
-            num_lamps = st.number_input("Jumlah Lampu", 10, 200, 50, 5)
+            num_lamps = st.number_input("Jumlah Lampu per House", 10, 200, 50, 5)
             cost_per_lamp = st.number_input("Harga per Lampu (Rp)", 50000, 500000, 150000, 10000)
-            cost_installation = st.number_input("Biaya Instalasi Listrik (Rp)", 500000, 5000000, 2000000, 100000)
-            cost_lighting = (num_lamps * cost_per_lamp) + cost_installation
-            st.metric("Subtotal Lampu", f"Rp {cost_lighting:,.0f}")
+            cost_installation = st.number_input("Biaya Instalasi Listrik per House (Rp)", 500000, 5000000, 2000000, 100000)
+            cost_lighting = ((num_lamps * cost_per_lamp) + cost_installation) * inv_multiplier
+            st.metric("Subtotal Lampu", f"Rp {cost_lighting:,.0f}", f"x {inv_multiplier} house" if inv_multiplier > 1 else "")
         
         with st.expander("🌑 Plastik Hitam (Shading)"):
-            shading_area = st.number_input("Luas Shading (m²)", 100, 5000, int(data.get('total_bed_area', 300)), 50)
+            shading_area = st.number_input("Luas Shading per House (m²)", 100, 5000, int(data.get('total_bed_area', 300)), 50)
             cost_shading_per_m2 = st.number_input("Harga Plastik per m² (Rp)", 5000, 30000, 15000, 1000)
-            cost_shading = shading_area * cost_shading_per_m2
-            st.metric("Subtotal Shading", f"Rp {cost_shading:,.0f}")
+            cost_shading = shading_area * cost_shading_per_m2 * inv_multiplier
+            st.metric("Subtotal Shading", f"Rp {cost_shading:,.0f}", f"x {inv_multiplier} house" if inv_multiplier > 1 else "")
         
         with st.expander("🔧 Peralatan Lain"):
-            cost_tools = st.number_input("Peralatan (gunting, ember, dll)", 1000000, 10000000, 3000000, 500000)
-            st.metric("Subtotal Peralatan", f"Rp {cost_tools:,.0f}")
+            cost_tools = st.number_input("Peralatan per House (Rp)", 1000000, 10000000, 3000000, 500000)
+            cost_tools = cost_tools * inv_multiplier
+            st.metric("Subtotal Peralatan", f"Rp {cost_tools:,.0f}", f"x {inv_multiplier} house" if inv_multiplier > 1 else "")
         
         total_investment = cost_greenhouse + irrigation_cost + cost_lighting + cost_shading + cost_tools
         
         st.markdown("---")
         st.metric("💼 **TOTAL INVESTASI AWAL**", f"Rp {total_investment:,.0f}")
+        
+        # Save total investment to session state
+        st.session_state.krisan_data['total_investment'] = total_investment
     
     with col_rab2:
         st.markdown("### 💵 B. Biaya Operasional (per Siklus)")
