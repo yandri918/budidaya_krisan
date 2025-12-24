@@ -74,7 +74,7 @@ with tab1:
 with tab2:
     st.subheader("📊 Analisis Biaya & Pendapatan Operasional")
     
-    # Sync with house_database
+    # Sync with house_database and krisan_data
     if 'house_database' in st.session_state and st.session_state.house_database:
         house_db = st.session_state.house_database
         num_houses = len(house_db)
@@ -88,62 +88,96 @@ with tab2:
         total_plants_synced = 0
         st.info("💡 Sinkronkan data dari Kalkulator Produksi untuk hasil akurat")
     
-    col1, col2 = st.columns(2)
+    # Get data from Kalkulator Produksi (Tab 3)
+    krisan_data = st.session_state.get('krisan_data', {})
     
-    with col1:
-        st.markdown("### 📝 Parameter Produksi")
+    # Use synced data or defaults
+    if use_synced and total_plants_synced > 0:
+        total_plants = total_plants_synced
+        survival_rate = krisan_data.get('survival_rate', 85) / 100
+        stems_per_plant = krisan_data.get('stems_per_plant', 3.5)
+        cycles_per_year = 3  # Default
+        avg_selling_price = 12000  # Default, user can override
         
-        if use_synced and total_plants_synced > 0:
-            total_plants = total_plants_synced
-            st.metric("🌱 Tanaman per Siklus (synced)", f"{total_plants:,}")
-        else:
+        # Calculate from synced data
+        surviving_plants = int(total_plants * survival_rate)
+        total_stems = int(surviving_plants * stems_per_plant)
+        
+        # Get RAB data if available
+        cost_cutting = krisan_data.get('rab_bibit', total_plants * 400)
+        cost_fertilizer = krisan_data.get('rab_pupuk', total_beds * 50000)
+        cost_pesticide = krisan_data.get('rab_pestisida', total_beds * 30000)
+        cost_electricity = krisan_data.get('rab_listrik', 500000 * 4)
+        cost_labor = krisan_data.get('rab_tenaga_kerja', 80000 * 90)
+        cost_other = krisan_data.get('rab_lainnya', 2000000)
+    else:
+        # Fallback to manual input
+        st.warning("⚠️ Data belum tersinkronisasi. Gunakan input manual atau isi Kalkulator Produksi terlebih dahulu.")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("### 📝 Parameter Produksi")
             density = st.slider("Densitas (tanaman/m²)", 40, 80, 64)
-            total_plants = greenhouse_area * density
+            total_plants = greenhouse_area * density if 'greenhouse_area' in dir() else 76800
+            
+            survival_rate = st.slider("✅ Survival Rate (%)", 70, 95, 85) / 100
+            stems_per_plant = st.slider("🌸 Tangkai per Tanaman", 1.0, 5.0, 3.5, 0.5)
+            cycles_per_year = st.slider("📅 Siklus per Tahun", 2, 4, 3)
+            
+            st.markdown("### 💰 Parameter Harga")
+            avg_selling_price = st.number_input("💵 Harga Jual Rata-rata (Rp/tangkai)", 500, 25000, 12000, 500)
         
-        survival_rate = st.slider("✅ Survival Rate (%)", 70, 95, 90) / 100
-        stems_per_plant = st.slider("🌸 Tangkai per Tanaman", 1.0, 2.0, 1.0, 0.5, help="1 tanaman = 1 tangkai bunga")
-        cycles_per_year = st.slider("📅 Siklus per Tahun", 2, 4, 3)
-        
-        st.markdown("### 💰 Parameter Harga")
-        
-        avg_selling_price = st.number_input("💵 Harga Jual Rata-rata (Rp/tangkai)", 500, 5000, 1000, step=100)
-        
-    with col2:
-        st.markdown("### 📋 Biaya Operasional per Siklus")
-        
-        # Calculate production
-        harvested = int(total_plants * survival_rate)
-        total_stems = int(harvested * stems_per_plant)
-        
-        # Revenue
-        revenue_cycle = total_stems * avg_selling_price
-        revenue_year = revenue_cycle * cycles_per_year
-        
-        # Costs per cycle
-        cost_cutting = total_plants * 400  # Rp 400/stek
-        if use_synced:
-            cost_fertilizer = total_beds * 50000  # Rp 50rb/bedengan
-            cost_pesticide = total_beds * 30000   # Rp 30rb/bedengan
-        else:
-            cost_fertilizer = greenhouse_area * 2500
-            cost_pesticide = greenhouse_area * 1500
-        cost_electricity = 500000 * 4  # 4 bulan per siklus
-        cost_labor = 80000 * 90  # 90 hari kerja
-        cost_other = 2000000
-        
-        total_cost_cycle = cost_cutting + cost_fertilizer + cost_pesticide + cost_electricity + cost_labor + cost_other
-        total_cost_year = total_cost_cycle * cycles_per_year
-        
-        profit_cycle = revenue_cycle - total_cost_cycle
-        profit_year = profit_cycle * cycles_per_year
-        
-        # Display
-        st.metric("🌸 Produksi per Siklus", f"{total_stems:,} tangkai")
-        st.metric("💵 Pendapatan per Siklus", f"Rp {revenue_cycle:,.0f}")
-        st.metric("💸 Biaya per Siklus", f"Rp {total_cost_cycle:,.0f}")
-        
+        with col2:
+            st.markdown("### 📋 Biaya Operasional per Siklus")
+            
+            surviving_plants = int(total_plants * survival_rate)
+            total_stems = int(surviving_plants * stems_per_plant)
+            
+            # Manual cost inputs
+            cost_cutting = total_plants * 400
+            cost_fertilizer = st.number_input("Pupuk (Rp)", 0, 50000000, 2500000, 100000)
+            cost_pesticide = st.number_input("Pestisida (Rp)", 0, 20000000, 1500000, 100000)
+            cost_electricity = st.number_input("Listrik (Rp)", 0, 5000000, 2000000, 100000)
+            cost_labor = st.number_input("Tenaga Kerja (Rp)", 0, 20000000, 7200000, 100000)
+            cost_other = st.number_input("Lain-lain (Rp)", 0, 10000000, 2000000, 100000)
+    
+    # Calculate totals (same for both synced and manual)
+    total_cost_cycle = cost_cutting + cost_fertilizer + cost_pesticide + cost_electricity + cost_labor + cost_other
+    
+    # Allow user to override selling price and cycles
+    st.markdown("---")
+    st.markdown("### 💰 Parameter Penjualan")
+    
+    price_col, cycle_col = st.columns(2)
+    with price_col:
+        avg_selling_price = st.number_input("💵 Harga Jual (Rp/tangkai)", 500, 25000, avg_selling_price, 500)
+    with cycle_col:
+        cycles_per_year = st.slider("📅 Siklus per Tahun", 2, 4, cycles_per_year if 'cycles_per_year' in dir() else 3)
+    
+    # Revenue calculations
+    revenue_cycle = total_stems * avg_selling_price
+    revenue_year = revenue_cycle * cycles_per_year
+    
+    total_cost_year = total_cost_cycle * cycles_per_year
+    
+    profit_cycle = revenue_cycle - total_cost_cycle
+    profit_year = profit_cycle * cycles_per_year
+    
+    # Display summary
+    st.markdown("---")
+    st.markdown("### 📊 Ringkasan per Siklus")
+    
+    col_summary = st.columns(4)
+    with col_summary[0]:
+        st.metric("🌸 Produksi", f"{total_stems:,} tangkai")
+    with col_summary[1]:
+        st.metric("💵 Pendapatan", f"Rp {revenue_cycle:,.0f}")
+    with col_summary[2]:
+        st.metric("💸 Biaya", f"Rp {total_cost_cycle:,.0f}")
+    with col_summary[3]:
         margin_pct = (profit_cycle/revenue_cycle*100) if revenue_cycle > 0 else 0
-        st.metric("📈 **PROFIT per Siklus**", f"Rp {profit_cycle:,.0f}", 
+        st.metric("📈 **PROFIT**", f"Rp {profit_cycle:,.0f}", 
                   delta=f"Margin {margin_pct:.1f}%")
     
     st.markdown("---")

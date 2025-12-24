@@ -626,7 +626,21 @@ with tab3:
     
     col_sum1, col_sum2, col_sum3 = st.columns(3)
     
-    total_stems = data.get('total_stems', 50000)
+    # Calculate total_stems properly from population data
+    total_plants = data.get('total_plants', 0)
+    survival_rate = data.get('survival_rate', 85) / 100  # Convert to decimal
+    stems_per_plant = data.get('stems_per_plant', 3.5)
+    
+    # If total_plants is 0, try to get from house_database
+    if total_plants == 0 and 'house_database' in st.session_state and st.session_state.house_database:
+        total_plants = sum(h.get('total_plants', 0) for h in st.session_state.house_database.values())
+    
+    # Calculate total stems
+    surviving_plants = int(total_plants * survival_rate)
+    total_stems = int(surviving_plants * stems_per_plant)
+    
+    # Update session state with calculated value
+    st.session_state.krisan_data['total_stems'] = total_stems
     
     with col_sum1:
         st.markdown("**📥 Pendapatan**")
