@@ -779,8 +779,9 @@ with tab3:
     st.session_state.krisan_data['total_stems'] = total_stems
     
     with col_sum1:
-        st.markdown("**📥 Pendapatan**")
-        selling_price = st.number_input("Harga Jual (Rp/tangkai)", 5000, 25000, 12000, 500)
+        st.markdown("**📥 Pendapatan & Optimisasi**")
+        # Fix min value 5000 -> 100 to allow simulation of low prices
+        selling_price = st.number_input("Harga Jual (Rp/tangkai)", 100, 25000, 12000, 100, help="Ubah untuk simulasi profit")
         cycles_per_year = st.selectbox("Siklus/Tahun", [2, 3], index=1)
         
         revenue_cycle = total_stems * selling_price
@@ -788,6 +789,17 @@ with tab3:
         
         st.metric("Pendapatan/Siklus", f"Rp {revenue_cycle:,.0f}")
         st.metric("Pendapatan/Tahun", f"Rp {revenue_year:,.0f}")
+        
+        st.markdown("📉 **Batas Aman (Break-Even):**")
+        # Safety Limits / BEP Analysis
+        # 1. Min Price (Cost per Stem) to break even
+        cost_per_stem_limit = total_operational / total_stems if total_stems > 0 else 0
+        st.metric("Harga Jual Minimum", f"Rp {cost_per_stem_limit:,.0f}", help="Jika harga jual di bawah ini, Anda rugi (Operational only)")
+        
+        # 2. Min Production (Stems) to break even at current price
+        # BEP Units = Total Cost / Price
+        min_stems_limit = int(total_operational / selling_price) if selling_price > 0 else 0
+        st.metric("Produksi Minimum", f"{min_stems_limit:,} tangkai", help="Jika produksi di bawah ini, Anda rugi")
     
     with col_sum2:
         st.markdown("**📤 Total Biaya**")
