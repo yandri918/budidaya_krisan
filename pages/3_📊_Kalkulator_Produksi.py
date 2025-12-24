@@ -93,40 +93,43 @@ if 'krisan_data' not in st.session_state:
     }
 
 # ========== TABS ==========
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "🌱 Populasi Tanaman", 
-    "💧 Nozzle & Irigasi", 
-    "💰 RAB Lengkap",
-    "🤖 AI Optimasi",
-    "📈 Analisis Tahunan"
-])
-
-# ==================== TAB 1: POPULASI ====================
-with tab1:
-    st.subheader("🌱 Perhitungan Populasi Tanaman")
-    
-    # ========== KONFIGURASI HOUSE ==========
-    st.markdown("### 🏠 Konfigurasi House/Greenhouse")
-    
     # Initialize house database in session state
     if 'house_database' not in st.session_state:
         st.session_state.house_database = {}
     
     # AUTO-LOAD: Check if we have saved config and load it if session is empty
+    # Place this BEFORE tabs so it's ready globally
     if not st.session_state.house_database:
         saved_config = load_house_config()
         if saved_config:
             st.session_state.house_database = saved_config
-            # st.toast("📂 Konfigurasi House dimuat otomatis!", icon="✅")
+            st.toast(f"📂 Konfigurasi {len(saved_config)} House dimuat!", icon="✅")
+
+    # Determine default number of houses from saved data
+    default_num_houses = len(st.session_state.house_database) if st.session_state.house_database else 4
+
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "🌱 Populasi", 
+        "💧 Irigasi & Teknis", 
+        "💰 RAB & Profit",
+        "🤖 AI Optimasi"
+    ])
     
-    house_config_cols = st.columns([1, 1, 1])
-    
-    with house_config_cols[0]:
-        num_houses = st.number_input(
-            "🏠 Jumlah House",
-            min_value=1, max_value=20, value=4,
-            help="Total greenhouse yang akan dikelola"
-        )
+    # ==================== TAB 1: POPULASI ====================
+    with tab1:
+        st.subheader("🌱 Perhitungan Populasi Tanaman")
+        
+        # ========== KONFIGURASI HOUSE ==========
+        st.markdown("### 🏠 Konfigurasi House/Greenhouse")
+        
+        house_config_cols = st.columns([1, 1, 1])
+        
+        with house_config_cols[0]:
+            num_houses = st.number_input(
+                "🏠 Jumlah House",
+                min_value=1, max_value=20, value=default_num_houses,
+                help="Total greenhouse yang akan dikelola"
+            )
     
     with house_config_cols[1]:
         beds_per_house_config = st.number_input(
