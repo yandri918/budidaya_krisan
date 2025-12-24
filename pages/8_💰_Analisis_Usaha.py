@@ -247,17 +247,43 @@ with tab3:
     # Fixed vs Variable costs
     # Fixed costs per cycle (depreciation, etc.)
     if 'total_investment' in dir():
-        depreciation_per_cycle = (total_investment * 0.7) / (5 * cycles_per_year_calc)  # 5 year lifespan, 70% depreciable
+        # Depreciation calculation
+        # Assume 5 year lifespan for greenhouse, 70% depreciable
+        depreciation_per_year = (total_investment * 0.7) / 5
+        depreciation_per_cycle = depreciation_per_year / cycles_per_year_calc
     else:
-        depreciation_per_cycle = 10000000  # Default
+        # Default depreciation based on typical investment
+        # Typical: Rp 200M for 4 houses, 3 cycles/year
+        # = Rp 200M * 0.7 / 5 / 3 = Rp 9.3M per cycle
+        depreciation_per_cycle = 10000000  # Default Rp 10M per cycle
     
-    biaya_tetap_cycle = depreciation_per_cycle
+    # Add overhead costs (admin, marketing, packaging, etc.)
+    # Typically 15-20% of operational costs
+    overhead_percentage = 0.15
+    overhead_per_cycle = total_cost_cycle_calc * overhead_percentage
+    
+    # Total fixed costs per cycle
+    biaya_tetap_cycle = depreciation_per_cycle + overhead_per_cycle
+    
+    # Variable costs (operational costs from RAB)
     biaya_variabel_cycle = total_cost_cycle_calc
+    
+    # Total costs including depreciation and overhead
     total_biaya_cycle = biaya_tetap_cycle + biaya_variabel_cycle
     
-    # Cost per stem
+    # Cost per stem (more realistic now)
     biaya_per_tangkai = total_biaya_cycle / total_stems_calc if total_stems_calc > 0 else 0
     biaya_variabel_per_tangkai = biaya_variabel_cycle / total_stems_calc if total_stems_calc > 0 else 0
+    
+    # Display cost breakdown
+    st.info(f"""
+    **💰 Breakdown Biaya per Siklus:**
+    - Biaya Operasional: Rp {biaya_variabel_cycle:,.0f}
+    - Depreciation: Rp {depreciation_per_cycle:,.0f}
+    - Overhead (15%): Rp {overhead_per_cycle:,.0f}
+    - **Total Biaya**: Rp {total_biaya_cycle:,.0f}
+    - **Cost per Tangkai**: Rp {biaya_per_tangkai:,.0f}
+    """)
     
     # Create sub-tabs
     subtab_bep, subtab_sens, subtab_profit = st.tabs([
