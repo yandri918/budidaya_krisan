@@ -110,6 +110,16 @@ with tab2:
         cost_electricity = krisan_data.get('rab_listrik', 500000 * 4)
         cost_labor = krisan_data.get('rab_tenaga_kerja', 80000 * 90)
         cost_other = krisan_data.get('rab_lainnya', 2000000)
+        
+        # New cost components from Tab 3
+        cost_media = krisan_data.get('rab_media', 0)
+        cost_mulsa = krisan_data.get('rab_mulsa', 0)
+        cost_consumables = krisan_data.get('rab_consumables', 0)
+        cost_water = krisan_data.get('rab_water', 0)
+        cost_maintenance = krisan_data.get('rab_maintenance', 0)
+        cost_grading = krisan_data.get('rab_grading', 0)
+        cost_packaging = krisan_data.get('rab_packaging', 0)
+        cost_transport = krisan_data.get('rab_transport', 0)
     else:
         # Fallback to manual input
         st.warning("⚠️ Data belum tersinkronisasi. Gunakan input manual atau isi Kalkulator Produksi terlebih dahulu.")
@@ -141,9 +151,23 @@ with tab2:
             cost_electricity = st.number_input("Listrik (Rp)", 0, 5000000, 2000000, 100000)
             cost_labor = st.number_input("Tenaga Kerja (Rp)", 0, 20000000, 7200000, 100000)
             cost_other = st.number_input("Lain-lain (Rp)", 0, 10000000, 2000000, 100000)
+            
+            # Default 0 for new components in manual mode to keep it simple
+            cost_media = 0
+            cost_mulsa = 0
+            cost_consumables = 0
+            cost_water = 0
+            cost_maintenance = 0
+            cost_grading = 0
+            cost_packaging = 0
+            cost_transport = 0
     
-    # Calculate totals (same for both synced and manual)
-    total_cost_cycle = cost_cutting + cost_fertilizer + cost_pesticide + cost_electricity + cost_labor + cost_other
+    # Calculate totals (including all NEW components)
+    total_cost_cycle = (
+        cost_cutting + cost_fertilizer + cost_pesticide + cost_electricity + cost_labor + cost_other +
+        cost_media + cost_mulsa + cost_consumables + cost_water + cost_maintenance + 
+        cost_grading + cost_packaging + cost_transport
+    )
     
     # Allow user to override selling price and cycles
     st.markdown("---")
