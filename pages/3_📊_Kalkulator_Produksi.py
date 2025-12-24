@@ -89,7 +89,7 @@ with tab1:
     # ========== KONFIGURASI HOUSE ==========
     st.markdown("### 🏠 Konfigurasi House/Greenhouse")
     
-    # Initialize house database in session state
+    # Initialize house database in session state (redundant now, but kept for clarity if not pre-loaded)
     if 'house_database' not in st.session_state:
         st.session_state.house_database = {}
     
@@ -232,7 +232,13 @@ with tab1:
             st.session_state.krisan_data['total_beds_all_houses'] = total_beds_all
             st.session_state.krisan_data['total_plants_all_houses'] = total_plants_all
             
-            st.success(f"✅ {num_houses} house tersimpan! Total {total_beds_all} bedengan, {total_plants_all:,} tanaman")
+            # PERSISTENCE: Save to JSON file
+            try:
+                save_house_config(house_configs)
+                st.success(f"✅ {num_houses} house tersimpan PERMANEN! Total {total_beds_all} bedengan, {total_plants_all:,} tanaman")
+            except Exception as e:
+                st.error(f"❌ Gagal menyimpan ke file: {e}")
+                
             st.rerun()
     
     # Show saved houses summary
