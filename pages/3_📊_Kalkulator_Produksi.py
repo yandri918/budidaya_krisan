@@ -606,7 +606,75 @@ with tab3:
             cost_other = st.number_input("Biaya Lain-lain (Rp)", 0, 5000000, 500000, 100000)
             st.metric("Subtotal Lainnya", f"Rp {cost_other:,.0f}")
         
-        total_operational = cost_cuttings_total + cost_fertilizer + cost_pesticide + cost_labor + cost_electricity_total + cost_other
+        # NEW COST COMPONENTS
+        with st.expander("🌱 Media Tanam"):
+            media_cost_per_m2 = st.number_input("Biaya Media per m² (Rp)", 1000, 10000, 3000, 500, key="media_cost")
+            media_cost = total_bed_area * media_cost_per_m2
+            st.metric("Subtotal Media Tanam", f"Rp {media_cost:,.0f}")
+            st.caption("Sekam bakar, cocopeat, kompos")
+        
+        with st.expander("🛡️ Plastik Mulsa"):
+            mulsa_cost_per_m2 = st.number_input("Biaya Mulsa per m² (Rp)", 5000, 30000, 15000, 1000, key="mulsa_cost")
+            mulsa_lifespan = st.selectbox("Umur Pakai (siklus)", [1, 2, 3], index=1, key="mulsa_life")
+            mulsa_cost = (total_bed_area * mulsa_cost_per_m2) / mulsa_lifespan
+            st.metric("Subtotal Plastik Mulsa", f"Rp {mulsa_cost:,.0f}")
+            st.caption(f"Amortisasi {mulsa_lifespan} siklus")
+        
+        with st.expander("📦 Bahan Habis Pakai"):
+            consumable_per_plant = st.number_input("Biaya per Tanaman (Rp)", 20, 200, 50, 10, key="consumable")
+            consumable_cost = total_plants * consumable_per_plant
+            st.metric("Subtotal Bahan Habis Pakai", f"Rp {consumable_cost:,.0f}")
+            st.caption("Tali rafia, ajir, label, karet")
+        
+        with st.expander("💧 Air"):
+            water_cost_monthly = st.number_input("Biaya Air per Bulan (Rp)", 100000, 2000000, 500000, 50000, key="water")
+            water_cost = water_cost_monthly * 4  # 4 months per cycle
+            st.metric("Subtotal Air", f"Rp {water_cost:,.0f}", "4 bulan")
+        
+        with st.expander("🔧 Pemeliharaan & Perbaikan"):
+            maintenance_pct = st.slider("% dari Investasi/tahun", 1, 10, 5, key="maintenance_pct")
+            # Estimate based on typical investment
+            estimated_investment = 200000000  # Rp 200M typical
+            cycles_per_year_est = 3
+            maintenance_cost = (estimated_investment * maintenance_pct / 100) / cycles_per_year_est
+            st.metric("Subtotal Pemeliharaan", f"Rp {maintenance_cost:,.0f}")
+            st.caption("Service pompa, perbaikan greenhouse")
+        
+        with st.expander("✂️ Grading & Sortir"):
+            # Calculate total stems for grading
+            total_stems_rab = int(total_plants * 0.85 * 3.5)  # Default survival 85%, stems 3.5
+            grading_per_stem = st.number_input("Biaya per Tangkai (Rp)", 20, 200, 75, 5, key="grading")
+            grading_cost = total_stems_rab * grading_per_stem
+            st.metric("Subtotal Grading", f"Rp {grading_cost:,.0f}")
+            st.caption(f"Untuk {total_stems_rab:,} tangkai")
+        
+        with st.expander("📦 Packaging"):
+            packaging_per_stem = st.number_input("Biaya per Tangkai (Rp)", 50, 300, 150, 10, key="packaging")
+            packaging_cost = total_stems_rab * packaging_per_stem
+            st.metric("Subtotal Packaging", f"Rp {packaging_cost:,.0f}")
+            st.caption("Kardus, plastik wrap, label")
+        
+        with st.expander("🚚 Transportasi"):
+            transport_cost = st.number_input("Biaya Transport per Siklus (Rp)", 500000, 10000000, 2000000, 100000, key="transport")
+            st.metric("Subtotal Transportasi", f"Rp {transport_cost:,.0f}")
+            st.caption("Angkut input & distribusi output")
+        
+        total_operational = (
+            cost_cuttings_total + 
+            cost_fertilizer + 
+            cost_pesticide + 
+            cost_labor + 
+            cost_electricity_total + 
+            cost_other +
+            media_cost +
+            mulsa_cost +
+            consumable_cost +
+            water_cost +
+            maintenance_cost +
+            grading_cost +
+            packaging_cost +
+            transport_cost
+        )
         
         # Save RAB estimates to session state for sync with Jurnal Harian
         st.session_state.krisan_data['rab_bibit'] = cost_cuttings_total
@@ -615,6 +683,15 @@ with tab3:
         st.session_state.krisan_data['rab_tenaga_kerja'] = cost_labor
         st.session_state.krisan_data['rab_listrik'] = cost_electricity_total
         st.session_state.krisan_data['rab_lainnya'] = cost_other
+        # New cost components
+        st.session_state.krisan_data['rab_media'] = media_cost
+        st.session_state.krisan_data['rab_mulsa'] = mulsa_cost
+        st.session_state.krisan_data['rab_consumables'] = consumable_cost
+        st.session_state.krisan_data['rab_water'] = water_cost
+        st.session_state.krisan_data['rab_maintenance'] = maintenance_cost
+        st.session_state.krisan_data['rab_grading'] = grading_cost
+        st.session_state.krisan_data['rab_packaging'] = packaging_cost
+        st.session_state.krisan_data['rab_transport'] = transport_cost
         st.session_state.krisan_data['rab_total_operational'] = total_operational
         
         st.markdown("---")
