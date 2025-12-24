@@ -5,6 +5,25 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
+import json
+import os
+
+# --- PERSISTENCE LOGIC ---
+CONFIG_FILE = "data/krisan_house_config.json"
+
+def load_house_config():
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            return {}
+    return {}
+
+def save_house_config(config):
+    os.makedirs("data", exist_ok=True)
+    with open(CONFIG_FILE, "w") as f:
+        json.dump(config, f)
 
 st.set_page_config(page_title="Kalkulator Budidaya", page_icon="📊", layout="wide")
 
@@ -89,9 +108,16 @@ with tab1:
     # ========== KONFIGURASI HOUSE ==========
     st.markdown("### 🏠 Konfigurasi House/Greenhouse")
     
-    # Initialize house database in session state (redundant now, but kept for clarity if not pre-loaded)
+    # Initialize house database in session state
     if 'house_database' not in st.session_state:
         st.session_state.house_database = {}
+    
+    # AUTO-LOAD: Check if we have saved config and load it if session is empty
+    if not st.session_state.house_database:
+        saved_config = load_house_config()
+        if saved_config:
+            st.session_state.house_database = saved_config
+            # st.toast("📂 Konfigurasi House dimuat otomatis!", icon="✅")
     
     house_config_cols = st.columns([1, 1, 1])
     
