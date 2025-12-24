@@ -208,6 +208,7 @@ with tab3:
         total_stems_calc = total_stems
         avg_selling_price_calc = avg_selling_price
         total_cost_cycle_calc = total_cost_cycle
+        cycles_per_year_calc = cycles_per_year if 'cycles_per_year' in dir() else 3
     
     # Fixed vs Variable costs
     # Fixed costs per cycle (depreciation, etc.)
