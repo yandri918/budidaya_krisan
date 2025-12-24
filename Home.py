@@ -319,6 +319,7 @@ st.markdown("---")
 # ========== FEATURE CARDS ==========
 st.markdown("### 📚 Modul Pembelajaran")
 
+# ROW 1
 c1, c2, c3 = st.columns(3)
 
 with c1:
@@ -326,8 +327,8 @@ with c1:
     <div class="glass-card">
         <div class="card-icon">🌸</div>
         <div class="card-title">Panduan Budidaya</div>
-        <div class="card-desc">Teknik lengkap dari persiapan media, 
-        stek, penanaman, hingga pemanenan bunga berkualitas.</div>
+        <div class="card-desc">SOP lengkap dari persiapan media, 
+        stek, penanaman, hingga pemanenan.</div>
     </div>
     """, unsafe_allow_html=True)
     if st.button("📖 Buka Panduan", key="btn_guide", use_container_width=True):
@@ -336,64 +337,106 @@ with c1:
 with c2:
     st.markdown("""
     <div class="glass-card">
-        <div class="card-icon">🌡️</div>
-        <div class="card-title">Monitor Lingkungan</div>
-        <div class="card-desc">Pantau dan analisis parameter suhu, 
-        kelembaban, dan pencahayaan untuk hasil optimal.</div>
+        <div class="card-icon">🌤️</div>
+        <div class="card-title">Cuaca & Lingkungan</div>
+        <div class="card-desc">Analisis cuaca real-time, forecast 7 hari, 
+        dan rekomendasi tindakan harian.</div>
     </div>
     """, unsafe_allow_html=True)
-    if st.button("📊 Cek Parameter", key="btn_monitor", use_container_width=True):
-        st.switch_page("pages/2_🌡️_Monitor_Lingkungan.py")
+    if st.button("🌦️ Cek Cuaca", key="btn_weather", use_container_width=True):
+        st.switch_page("pages/2_🌤️_Cuaca_Lingkungan.py")
 
 with c3:
     st.markdown("""
     <div class="glass-card">
         <div class="card-icon">📊</div>
         <div class="card-title">Kalkulator Produksi</div>
-        <div class="card-desc">Hitung estimasi hasil panen, biaya produksi, 
-        dan proyeksi keuntungan usaha Anda.</div>
+        <div class="card-desc">Hitung estimasi populasi, biaya produksi,
+        dan potensi panen per siklus.</div>
     </div>
     """, unsafe_allow_html=True)
     if st.button("🧮 Hitung Produksi", key="btn_calc", use_container_width=True):
         st.switch_page("pages/3_📊_Kalkulator_Produksi.py")
 
+# ROW 2
+st.markdown("<br>", unsafe_allow_html=True)
 c4, c5, c6 = st.columns(3)
 
 with c4:
     st.markdown("""
     <div class="glass-card">
-        <div class="card-icon">🐛</div>
-        <div class="card-title">Hama & Penyakit</div>
-        <div class="card-desc">Identifikasi dan pengendalian hama penyakit 
-        krisan dengan pendekatan IPM.</div>
+        <div class="card-icon">📅</div>
+        <div class="card-title">Manajemen Tanam</div>
+        <div class="card-desc">Jadwal tanam otomatis, fase pertumbuhan,
+        dan reminder kegiatan harian.</div>
     </div>
     """, unsafe_allow_html=True)
-    if st.button("🔍 Lihat Panduan", key="btn_pest", use_container_width=True):
-        st.switch_page("pages/4_🐛_Hama_Penyakit.py")
+    if st.button("🗓️ Atur Jadwal", key="btn_schedule", use_container_width=True):
+        st.switch_page("pages/4_📅_Manajemen_Tanam.py")
 
 with c5:
     st.markdown("""
     <div class="glass-card">
-        <div class="card-icon">📦</div>
-        <div class="card-title">Pasca Panen</div>
-        <div class="card-desc">Teknik pemanenan, grading, packing, 
-        dan perpanjangan vase life bunga potong.</div>
+        <div class="card-icon">📈</div>
+        <div class="card-title">Pantau Pertumbuhan</div>
+        <div class="card-desc">Monitoring tinggi tanaman, visualisasi grafik,
+        dan analisis kesehatan tanaman.</div>
     </div>
     """, unsafe_allow_html=True)
-    if st.button("📋 Baca Panduan", key="btn_harvest", use_container_width=True):
-        st.switch_page("pages/5_📦_Pasca_Panen.py")
+    if st.button("📏 Pantau Growth", key="btn_growth", use_container_width=True):
+        st.switch_page("pages/5_📈_Pantau_Pertumbuhan.py")
 
 with c6:
     st.markdown("""
     <div class="glass-card">
-        <div class="card-icon">💰</div>
-        <div class="card-title">Analisis Usaha</div>
-        <div class="card-desc">Perhitungan modal, BEP, ROI, dan 
-        proyeksi bisnis budidaya krisan Anda.</div>
+        <div class="card-icon">🐛</div>
+        <div class="card-title">Hama & Penyakit</div>
+        <div class="card-desc">Identifikasi gejala, database OPT, dan
+        rekomendasi pengendalian terpadu.</div>
     </div>
     """, unsafe_allow_html=True)
-    if st.button("📈 Analisis Bisnis", key="btn_business", use_container_width=True):
-        st.switch_page("pages/6_💰_Analisis_Usaha.py")
+    if st.button("🔍 Cek Hama", key="btn_pest", use_container_width=True):
+        st.switch_page("pages/6_🐛_Hama_Penyakit.py")
+
+# ROW 3
+st.markdown("<br>", unsafe_allow_html=True)
+c7, c8, c9 = st.columns(3)
+
+with c7:
+    st.markdown("""
+    <div class="glass-card">
+        <div class="card-icon">📦</div>
+        <div class="card-title">Pasca Panen</div>
+        <div class="card-desc">Grading, storage, treatment, dan
+        pencatatan riwayat panen (Database).</div>
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button("📋 Input Panen", key="btn_harvest", use_container_width=True):
+        st.switch_page("pages/7_📦_Pasca_Panen.py")
+
+with c8:
+    st.markdown("""
+    <div class="glass-card">
+        <div class="card-icon">💰</div>
+        <div class="card-title">Analisis Usaha</div>
+        <div class="card-desc">Laporan keuangan, ROI, BEP, dan
+        analisis profitabilitas bisnis.</div>
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button("📈 Cek Profit", key="btn_business", use_container_width=True):
+        st.switch_page("pages/8_💰_Analisis_Usaha.py")
+
+with c9:
+    st.markdown("""
+    <div class="glass-card">
+        <div class="card-icon">🌡️</div>
+        <div class="card-title">Simulasi Lingkungan</div>
+        <div class="card-desc">Tools manual untuk simulasi kesesuaian
+        parameter suhu dan kelembaban.</div>
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button("🎛️ Simulasi", key="btn_sim", use_container_width=True):
+        st.switch_page("pages/9_🌡️_Simulasi_Lingkungan.py")
 
 st.markdown("---")
 

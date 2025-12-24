@@ -5,8 +5,20 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
+import sys
+import os
+
+# Ensure project root is in path for utils import
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils.db_manager import init_db, save_harvest_record, get_harvest_summary, get_harvest_details, clear_database
 
 st.set_page_config(page_title="Pasca Panen", page_icon="📦", layout="wide")
+
+# Initialize DB and Load Data
+init_db()
+# Load latest data from DB to ensure session state is in sync
+st.session_state.harvest_history = get_harvest_summary()
+st.session_state.harvest_details = get_harvest_details()
 
 # CSS
 st.markdown("""
@@ -527,27 +539,21 @@ with tab2:
         grade_a_pct = (grade_a_stems / grand_total_stems * 100) if grand_total_stems > 0 else 0
         
         if st.button("💾 Simpan ke Riwayat Panen", type="primary", use_container_width=True, key="save_grading_to_history"):
-            # Initialize harvest history if not exists
-            if 'harvest_history' not in st.session_state:
-                st.session_state.harvest_history = []
-            if 'harvest_details' not in st.session_state:
-                st.session_state.harvest_details = []
-            
-            # 1. Save Summary
-            new_entry = {
+            # Prepare Summary Data
+            summary_entry = {
                 "Tanggal": report_date.strftime("%Y-%m-%d"),
                 "House": house_name,
-                "Tangkai": grand_total_stems,
-                "Grade A %": round(grade_a_pct, 1),
-                "Pendapatan": grand_total_revenue,
-                "Putih": totals_putih['stems'],
-                "Pink": totals_pink['stems'],
-                "Kuning": totals_kuning['stems']
+                "Tangkai": int(grand_total_stems),
+                "Grade A %": float(round(grade_a_pct, 1)),
+                "Pendapatan": int(grand_total_revenue),
+                "Putih": int(totals_putih['stems']),
+                "Pink": int(totals_pink['stems']),
+                "Kuning": int(totals_kuning['stems'])
             }
-            st.session_state.harvest_history.append(new_entry)
             
-            # 2. Save Granular Details (Dataset)
+            # Prepare Details Data (Granular)
             current_date = report_date.strftime("%Y-%m-%d")
+            details_rows = []
             
             # Helper to record item lines
             def record_variety_details(var_name, var_key, var_data):
@@ -559,36 +565,13 @@ with tab2:
                         price_per_ikat = st.session_state.grade_prices.get(g['key'], 0) * g['qty']
                         revenue = ikat * price_per_ikat
                         
-                        st.session_state.harvest_details.append({
+                        details_rows.append({
                             "Tanggal": current_date,
                             "House": house_name,
                             "Varietas": var_name,
-                            "Grade": g['name'],
+                            "Grade": g['label'], # Use label from dict
                             "Tipe": "Normal",
-                            "Ukuran": "90cm",
-                            "Jml_Ikat": ikat,
-                            "Isi_per_Ikat": g['qty'],
-                            "Total_Batang": qty,
-                            "Harga_per_Ikat": price_per_ikat,
-                            "Harga_per_Batang": st.session_state.grade_prices.get(g['key'], 0),
-                            "Total_Pendapatan": revenue
-                        })
-                
-                # BS grades
-                for g in bs_grades:
-                    ikat = var_data.get(g['key'], 0)
-                    if ikat > 0:
-                        qty = ikat * g['qty']
-                        price_per_ikat = st.session_state.grade_prices.get(g['key'], 0) * g['qty']
-                        revenue = ikat * price_per_ikat
-                        
-                        st.session_state.harvest_details.append({
-                            "Tanggal": current_date,
-                            "House": house_name,
-                            "Varietas": var_name,
-                            "Grade": g['name'],
-                            "Tipe": "BS/Rusak",
-                            "Ukuran": f"{g.get('length', 'Unknown')}cm",
+                            "Ukuran": f"{g['qty']} bt/ikat",
                             "Jml_Ikat": ikat,
                             "Isi_per_Ikat": g['qty'],
                             "Total_Batang": qty,
@@ -597,13 +580,87 @@ with tab2:
                             "Total_Pendapatan": revenue
                         })
 
-            # Record for each variety
-            record_variety_details("Putih", "putih", st.session_state.grading_data_variety['putih'])
-            record_variety_details("Pink", "pink", st.session_state.grading_data_variety['pink'])
-            record_variety_details("Kuning", "kuning", st.session_state.grading_data_variety['kuning'])
+                # BS grades
+                for b in bs_grades:
+                    ikat = var_data.get(b['key'], 0)
+                    if ikat > 0:
+                        qty = ikat * b['qty']
+                        price_per_ikat = st.session_state.grade_prices.get(b['key'], 0) * b['qty']
+                        revenue = ikat * price_per_ikat
+                        
+                        details_rows.append({
+                            "Tanggal": current_date,
+                            "House": house_name,
+                            "Varietas": var_name,
+                            "Grade": b['label'], # Use label from dict (need to check if key exists in list above)
+                            "Tipe": "BS/Reject",
+                            "Ukuran": f"{b['qty']} bt/ikat",
+                            "Jml_Ikat": ikat,
+                            "Isi_per_Ikat": b['qty'],
+                            "Total_Batang": qty,
+                            "Harga_per_Ikat": price_per_ikat,
+                            "Harga_per_Batang": st.session_state.grade_prices.get(b['key'], 0),
+                            "Total_Pendapatan": revenue
+                        })
+
+            # Check if grade dicts have 'label' or need 'name'
+            # Based on view_file, they have 'name'. Let's use 'name'.
+            # Redefining helper properly inside the replacement.
             
-            st.success(f"✅ Data grading {house_name} tanggal {report_date.strftime('%d/%m/%Y')} tersimpan ke Riwayat Panen!")
-            st.balloons()
+            details_rows = []
+            def record_variety_details_db(var_name, var_key, var_data):
+                for g in normal_grades: # uses 'name'
+                    ikat = var_data.get(g['key'], 0)
+                    if ikat > 0:
+                        details_rows.append({
+                            "Tanggal": current_date,
+                            "House": house_name,
+                            "Varietas": var_name,
+                            "Grade": g['name'],
+                            "Tipe": "Normal",
+                            "Ukuran": f"{g['qty']} bt/ikat",
+                            "Jml_Ikat": ikat,
+                            "Isi_per_Ikat": g['qty'],
+                            "Total_Batang": ikat * g['qty'],
+                            "Harga_per_Ikat": st.session_state.grade_prices.get(g['key'], 0) * g['qty'],
+                            "Harga_per_Batang": st.session_state.grade_prices.get(g['key'], 0),
+                            "Total_Pendapatan": ikat * g['qty'] * st.session_state.grade_prices.get(g['key'], 0)
+                        })
+                for b in bs_grades: # uses 'name'
+                    ikat = var_data.get(b['key'], 0)
+                    if ikat > 0:
+                        details_rows.append({
+                            "Tanggal": current_date,
+                            "House": house_name,
+                            "Varietas": var_name,
+                            "Grade": b['name'],
+                            "Tipe": "BS/Reject",
+                            "Ukuran": f"{b['qty']} bt/ikat",
+                            "Jml_Ikat": ikat,
+                            "Isi_per_Ikat": b['qty'],
+                            "Total_Batang": ikat * b['qty'],
+                            "Harga_per_Ikat": st.session_state.grade_prices.get(b['key'], 0) * b['qty'],
+                            "Harga_per_Batang": st.session_state.grade_prices.get(b['key'], 0),
+                            "Total_Pendapatan": ikat * b['qty'] * st.session_state.grade_prices.get(b['key'], 0)
+                        })
+
+            record_variety_details_db("Putih", "putih", st.session_state.grading_data_variety['putih'])
+            record_variety_details_db("Pink", "pink", st.session_state.grading_data_variety['pink'])
+            record_variety_details_db("Kuning", "kuning", st.session_state.grading_data_variety['kuning'])
+            
+            df_details_save = pd.DataFrame(details_rows)
+            
+            # Save to Database
+            if save_harvest_record(summary_entry, df_details_save):
+                st.success("✅ Data berhasil disimpan ke Database!")
+                # Refresh session state
+                st.session_state.harvest_history = get_harvest_summary()
+                st.session_state.harvest_details = get_harvest_details()
+                st.balloons()
+            else:
+                st.error("❌ Gagal menyimpan data.")
+            
+
     
     # Detailed breakdown table
     with st.expander("📋 Lihat Rincian per Grade", expanded=False):
@@ -1260,16 +1317,22 @@ with tab7:
                 h_revenue = st.number_input("💵 Pendapatan (Rp)", 0, 100000000, 0, step=100000, key="harvest_revenue")
             
             if st.button("💾 Simpan Panen", type="primary", key="save_harvest"):
-                new_entry = {
+                summary_entry = {
                     "Tanggal": h_date.strftime("%Y-%m-%d"),
                     "House": h_house,
-                    "Tangkai": h_stems,
-                    "Grade A %": h_grade_a,
-                    "Pendapatan": h_revenue
+                    "Tangkai": int(h_stems),
+                    "Grade A %": float(h_grade_a),
+                    "Pendapatan": int(h_revenue),
+                    "Putih": 0, "Pink": 0, "Kuning": 0 # Default if unknown
                 }
-                st.session_state.harvest_history.append(new_entry)
-                st.success("✅ Data panen tersimpan!")
-                st.rerun()
+                
+                # Save with empty details
+                if save_harvest_record(summary_entry, pd.DataFrame()):
+                    st.success("✅ Data panen tersimpan ke Database!")
+                    st.session_state.harvest_history = get_harvest_summary()
+                    st.rerun()
+                else:
+                    st.error("❌ Gagal menyimpan data.")
         
         # Show history
         if st.session_state.harvest_history:
@@ -1321,7 +1384,8 @@ with tab7:
                 st.plotly_chart(fig2, use_container_width=True)
             
             # Clear button
-            if st.button("🗑️ Hapus Semua Riwayat", key="clear_history"):
+            if st.button("🗑️ Hapus Semua Riwayat", type="primary", key="clear_history"):
+                clear_database()
                 st.session_state.harvest_history = []
                 st.session_state.harvest_details = []
                 st.rerun()
