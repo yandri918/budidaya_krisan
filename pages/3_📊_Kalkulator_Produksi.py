@@ -93,30 +93,33 @@ if 'krisan_data' not in st.session_state:
     }
 
 # ========== TABS ==========
-    # Initialize house database in session state
-    if 'house_database' not in st.session_state:
-        st.session_state.house_database = {}
-    
-    # AUTO-LOAD: Check if we have saved config and load it if session is empty
-    # Place this BEFORE tabs so it's ready globally
-    if not st.session_state.house_database:
-        saved_config = load_house_config()
-        if saved_config:
-            st.session_state.house_database = saved_config
-            st.toast(f"📂 Konfigurasi {len(saved_config)} House dimuat!", icon="✅")
+# ========== TABS ==========
 
-    # Determine default number of houses from saved data
-    default_num_houses = len(st.session_state.house_database) if st.session_state.house_database else 4
+# Initialize house database in session state
+if 'house_database' not in st.session_state:
+    st.session_state.house_database = {}
 
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "🌱 Populasi", 
-        "💧 Irigasi & Teknis", 
-        "💰 RAB & Profit",
-        "🤖 AI Optimasi"
-    ])
-    
-    # ==================== TAB 1: POPULASI ====================
-    with tab1:
+# AUTO-LOAD: Check if we have saved config and load it if session is empty
+# Place this BEFORE tabs so it's ready globally
+if not st.session_state.house_database:
+    saved_config = load_house_config()
+    if saved_config:
+        st.session_state.house_database = saved_config
+        st.toast(f"📂 Konfigurasi {len(saved_config)} House dimuat!", icon="✅")
+
+# Determine default number of houses from saved data
+default_num_houses = len(st.session_state.house_database) if st.session_state.house_database else 4
+
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "🌱 Populasi", 
+    "💧 Irigasi & Teknis", 
+    "💰 RAB & Profit",
+    "🤖 AI Optimasi",
+    "📈 Analisis Tahunan"
+])
+
+# ==================== TAB 1: POPULASI ====================
+with tab1:
         st.subheader("🌱 Perhitungan Populasi Tanaman")
         
         # ========== KONFIGURASI HOUSE ==========
