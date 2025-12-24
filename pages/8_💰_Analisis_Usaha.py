@@ -153,7 +153,7 @@ with tab2:
     with price_col:
         avg_selling_price = st.number_input("💵 Harga Jual (Rp/tangkai)", 500, 25000, avg_selling_price, 500)
     with cycle_col:
-        cycles_per_year = st.slider("📅 Siklus per Tahun", 2, 4, cycles_per_year if 'cycles_per_year' in dir() else 3)
+        cycles_per_year = st.slider("📅 Siklus per Tahun", 2, 4, cycles_per_year if 'cycles_per_year' in dir() else 3, key="cycles_override")
     
     # Revenue calculations
     revenue_cycle = total_stems * avg_selling_price
