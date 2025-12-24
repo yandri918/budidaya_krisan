@@ -782,7 +782,12 @@ with tab3:
         st.markdown("**📥 Pendapatan & Optimisasi**")
         # Fix min value 5000 -> 100 to allow simulation of low prices
         selling_price = st.number_input("Harga Jual (Rp/tangkai)", 100, 25000, 12000, 100, help="Ubah untuk simulasi profit")
-        cycles_per_year = st.selectbox("Siklus/Tahun", [2, 3], index=1)
+        cycles_per_year = st.selectbox(
+            "Siklus/Tahun", 
+            [2, 3, 4], 
+            index=1,
+            help="Estimasi: 1 siklus krisan = 3.5 - 4 bulan. \n- 3 Siklus = Standar (ada jeda istirahat lahan)\n- 4 Siklus = Intensif (manajemen jeda sangat singkat)"
+        )
         
         revenue_cycle = total_stems * selling_price
         revenue_year = revenue_cycle * cycles_per_year
