@@ -446,16 +446,18 @@ with tab3:
             with col_cost2:
                 st.markdown("**Cost Breakdown:**")
                 cost_breakdown = pd.DataFrame({
-                    'Type': ['Biaya Tetap', 'Biaya Variabel', 'Total', 'Cost per Tangkai'],
+                    'Type': ['Biaya Operasional', 'Depreciation', 'Overhead (15%)', 'Total', 'Cost per Tangkai'],
                     'Amount': [
-                        f"Rp {biaya_tetap_cycle:,.0f}",
                         f"Rp {biaya_variabel_cycle:,.0f}",
+                        f"Rp {depreciation_per_cycle:,.0f}",
+                        f"Rp {overhead_per_cycle:,.0f}",
                         f"Rp {total_biaya_cycle:,.0f}",
                         f"Rp {biaya_per_tangkai:,.0f}/tangkai"
                     ],
                     'Share (%)': [
-                        f"{(biaya_tetap_cycle/total_biaya_cycle*100):.1f}%" if total_biaya_cycle > 0 else "0%",
                         f"{(biaya_variabel_cycle/total_biaya_cycle*100):.1f}%" if total_biaya_cycle > 0 else "0%",
+                        f"{(depreciation_per_cycle/total_biaya_cycle*100):.1f}%" if total_biaya_cycle > 0 else "0%",
+                        f"{(overhead_per_cycle/total_biaya_cycle*100):.1f}%" if total_biaya_cycle > 0 else "0%",
                         "100.0%",
                         "-"
                     ]
@@ -466,7 +468,9 @@ with tab3:
                 💡 **Cost per Tangkai** = Total Biaya / Total Produksi
                 
                 = Rp {total_biaya_cycle:,.0f} / {total_stems_calc:,.0f} tangkai
-                = Rp {biaya_per_tangkai:,.0f} per tangkai
+                = **Rp {biaya_per_tangkai:,.0f}** per tangkai
+                
+                ✅ Sudah termasuk depreciation dan overhead
                 """)
         
         else:
