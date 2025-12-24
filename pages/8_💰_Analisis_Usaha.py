@@ -262,14 +262,14 @@ with tab3:
     overhead_percentage = 0.15
     overhead_per_cycle = total_cost_cycle_calc * overhead_percentage
     
-    # Total fixed costs per cycle
-    biaya_tetap_cycle = depreciation_per_cycle + overhead_per_cycle
+    # Fixed costs per cycle (depreciation only)
+    biaya_tetap_cycle = depreciation_per_cycle
     
     # Variable costs (operational costs from RAB)
     biaya_variabel_cycle = total_cost_cycle_calc
     
-    # Total costs including depreciation and overhead
-    total_biaya_cycle = biaya_tetap_cycle + biaya_variabel_cycle
+    # Total costs = Operational + Depreciation + Overhead
+    total_biaya_cycle = biaya_variabel_cycle + depreciation_per_cycle + overhead_per_cycle
     
     # Cost per stem (more realistic now)
     biaya_per_tangkai = total_biaya_cycle / total_stems_calc if total_stems_calc > 0 else 0
