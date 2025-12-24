@@ -575,6 +575,24 @@ with tab3:
         total_plants = data.get('total_plants', 20000)
         total_bed_area = data.get('total_bed_area', 300)
         
+        # Get number of houses for scaling logic
+        house_db = st.session_state.get('house_database', {})
+        num_houses = len(house_db) if house_db else 1
+        
+        st.markdown("### ⚙️ Mode Input Biaya Periodik")
+        cost_input_mode = st.radio(
+            "Untuk Tenaga Kerja, Listrik, Air, dll:",
+            ["Input Total (Semua House)", "Input Per House (Otomatis dikali Jml House)"],
+            index=1,
+            help=f"Jika Mode 'Per House' dipilih, biaya akan dikalikan dengan {num_houses} house."
+        )
+        
+        cost_multiplier = num_houses if "Per House" in cost_input_mode else 1
+        
+        if cost_multiplier > 1:
+            st.info(f"💡 Biaya Tenaga Kerja, Listrik, Air, dll akan dikalikan **{cost_multiplier} house**")
+        
+        # Variable Costs (Already scaled by area/quantity)
         with st.expander("🌱 Bibit/Stek", expanded=True):
             cost_cutting = st.number_input("Harga per Stek (Rp)", 200, 1000, 400, 50)
             cost_cuttings_total = total_plants * cost_cutting
@@ -590,23 +608,28 @@ with tab3:
             cost_pesticide = total_bed_area * cost_pesticide_m2
             st.metric("Subtotal Pestisida", f"Rp {cost_pesticide:,.0f}")
         
+        # Fixed/Periodic Costs (Need scaling)
         with st.expander("👷 Tenaga Kerja"):
             labor_daily = st.number_input("Upah Harian (Rp)", 50000, 150000, 80000, 5000)
-            labor_days = st.number_input("Hari Kerja per Siklus", 60, 120, 90, 5)
-            cost_labor = labor_daily * labor_days
-            st.metric("Subtotal Tenaga Kerja", f"Rp {cost_labor:,.0f}")
+            labor_days = st.number_input("Hari Kerja per Siklus (per House)", 60, 120, 90, 5)
+            # Apply multiplier
+            cost_labor = labor_daily * labor_days * cost_multiplier
+            st.metric("Subtotal Tenaga Kerja", f"Rp {cost_labor:,.0f}", f"x {cost_multiplier} house" if cost_multiplier > 1 else "")
         
         with st.expander("⚡ Listrik"):
-            cost_electricity = st.number_input("Biaya Listrik per Bulan (Rp)", 200000, 2000000, 600000, 50000)
+            cost_electricity = st.number_input("Biaya Listrik per Bulan (Rp/House)", 200000, 2000000, 600000, 50000)
             months_per_cycle = 4
-            cost_electricity_total = cost_electricity * months_per_cycle
-            st.metric("Subtotal Listrik", f"Rp {cost_electricity_total:,.0f}", f"{months_per_cycle} bulan")
+            # Apply multiplier
+            cost_electricity_total = cost_electricity * months_per_cycle * cost_multiplier
+            st.metric("Subtotal Listrik", f"Rp {cost_electricity_total:,.0f}", f"{months_per_cycle} bulan x {cost_multiplier} house")
         
         with st.expander("📦 Lain-lain"):
-            cost_other = st.number_input("Biaya Lain-lain (Rp)", 0, 5000000, 500000, 100000)
-            st.metric("Subtotal Lainnya", f"Rp {cost_other:,.0f}")
+            cost_other = st.number_input("Biaya Lain-lain (Rp/House)", 0, 5000000, 500000, 100000)
+            # Apply multiplier
+            cost_other = cost_other * cost_multiplier
+            st.metric("Subtotal Lainnya", f"Rp {cost_other:,.0f}", f"x {cost_multiplier} house" if cost_multiplier > 1 else "")
         
-        # NEW COST COMPONENTS
+        # NEW COST COMPONENTS (Already Added previously, checking if scaling needed)
         with st.expander("🌱 Media Tanam"):
             media_cost_per_m2 = st.number_input("Biaya Media per m² (Rp)", 1000, 10000, 3000, 500, key="media_cost")
             media_cost = total_bed_area * media_cost_per_m2
@@ -621,20 +644,23 @@ with tab3:
             st.caption(f"Amortisasi {mulsa_lifespan} siklus")
         
         with st.expander("📦 Bahan Habis Pakai"):
+            # Variable cost, scales with plants (already total)
             consumable_per_plant = st.number_input("Biaya per Tanaman (Rp)", 20, 200, 50, 10, key="consumable")
             consumable_cost = total_plants * consumable_per_plant
             st.metric("Subtotal Bahan Habis Pakai", f"Rp {consumable_cost:,.0f}")
             st.caption("Tali rafia, ajir, label, karet")
         
         with st.expander("💧 Air"):
-            water_cost_monthly = st.number_input("Biaya Air per Bulan (Rp)", 100000, 2000000, 500000, 50000, key="water")
-            water_cost = water_cost_monthly * 4  # 4 months per cycle
-            st.metric("Subtotal Air", f"Rp {water_cost:,.0f}", "4 bulan")
+            water_cost_monthly = st.number_input("Biaya Air per Bulan (Rp/House)", 100000, 2000000, 500000, 50000, key="water")
+            # Apply multiplier
+            water_cost = water_cost_monthly * 4 * cost_multiplier
+            st.metric("Subtotal Air", f"Rp {water_cost:,.0f}", f"4 bulan x {cost_multiplier} house")
         
         with st.expander("🔧 Pemeliharaan & Perbaikan"):
             maintenance_pct = st.slider("% dari Investasi/tahun", 1, 10, 5, key="maintenance_pct")
-            # Estimate based on typical investment
-            estimated_investment = 200000000  # Rp 200M typical
+            # Using estimated investment if total_investment variable not available in this scope easily, 
+            # OR better to use total_investment if computed above, but let's use logic consistent with previous step
+            estimated_investment = 200000000 * num_houses # Scale investment estimate by number of houses
             cycles_per_year_est = 3
             maintenance_cost = (estimated_investment * maintenance_pct / 100) / cycles_per_year_est
             st.metric("Subtotal Pemeliharaan", f"Rp {maintenance_cost:,.0f}")
