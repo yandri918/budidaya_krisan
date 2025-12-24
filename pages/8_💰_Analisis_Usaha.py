@@ -91,6 +91,20 @@ with tab2:
     # Get data from Kalkulator Produksi (Tab 3)
     krisan_data = st.session_state.get('krisan_data', {})
     
+    # DEBUG: Check if data is coming through
+    with st.expander("🐛 Debug Data Session"):
+        st.write("Raw keys in krisan_data:", list(krisan_data.keys()))
+        col_d1, col_d2 = st.columns(2)
+        with col_d1:
+            st.write("Old Costs:")
+            st.write(f"Bibit: {krisan_data.get('rab_bibit', 'Not Found')}")
+            st.write(f"Pupuk: {krisan_data.get('rab_pupuk', 'Not Found')}")
+        with col_d2:
+            st.write("New Costs:")
+            st.write(f"Media: {krisan_data.get('rab_media', 'Not Found')}")
+            st.write(f"Mulsa: {krisan_data.get('rab_mulsa', 'Not Found')}")
+            st.write(f"Packaging: {krisan_data.get('rab_packaging', 'Not Found')}")
+    
     # Use synced data or defaults
     if use_synced and total_plants_synced > 0:
         total_plants = total_plants_synced
