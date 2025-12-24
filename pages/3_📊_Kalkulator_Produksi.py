@@ -120,19 +120,19 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 
 # ==================== TAB 1: POPULASI ====================
 with tab1:
-        st.subheader("🌱 Perhitungan Populasi Tanaman")
-        
-        # ========== KONFIGURASI HOUSE ==========
-        st.markdown("### 🏠 Konfigurasi House/Greenhouse")
-        
-        house_config_cols = st.columns([1, 1, 1])
-        
-        with house_config_cols[0]:
-            num_houses = st.number_input(
-                "🏠 Jumlah House",
-                min_value=1, max_value=20, value=default_num_houses,
-                help="Total greenhouse yang akan dikelola"
-            )
+    st.subheader("🌱 Perhitungan Populasi Tanaman")
+    
+    # ========== KONFIGURASI HOUSE ==========
+    st.markdown("### 🏠 Konfigurasi House/Greenhouse")
+    
+    house_config_cols = st.columns([1, 1, 1])
+    
+    with house_config_cols[0]:
+        num_houses = st.number_input(
+            "🏠 Jumlah House",
+            min_value=1, max_value=20, value=default_num_houses,
+            help="Total greenhouse yang akan dikelola"
+        )
     
     with house_config_cols[1]:
         beds_per_house_config = st.number_input(
